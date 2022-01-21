@@ -1,0 +1,22 @@
+{
+  "FileVersion": 3,
+  "Version": 1.0,
+  "VersionName": "1.0",
+  "EngineVersion": "4.27.0",
+  "FriendlyName": "Actor Pool",
+  "Description": "Actor Pool",
+  "Category": "Gameplay",
+  "CreatedBy": "Michael Delva",
+  "CreatedByURL": "http://www.emidee.net",
+  "EnabledByDefault": false,
+  "CanContainContent": false,
+
+  "Modules": [
+    {
+      "Name": "ActorPool",
+      "Type": "Runtime",
+      "LoadingPhase": "PreDefault"
+    }
+  ],
+  "Plugins": []
+}
