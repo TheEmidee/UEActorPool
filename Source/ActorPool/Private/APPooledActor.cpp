@@ -1,10 +1,22 @@
 #include "APPooledActor.h"
 
+FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings():
+    bShowActor( true ),
+    bEnableCollision( true ),
+    bDisableNetDormancy( true ),
+    NetDormancy( ENetDormancy::DORM_Awake )
+{
+}
+
 void AAPPooledActor::AcquiredFromPool()
 {
-    SetActorHiddenInGame( false );
-    SetActorEnableCollision( true );
-    SetNetDormancy( ENetDormancy::DORM_Awake );
+    SetActorHiddenInGame( !AcquireFromPoolSettings.bShowActor );
+    SetActorEnableCollision( AcquireFromPoolSettings.bEnableCollision );
+
+    if ( AcquireFromPoolSettings.bDisableNetDormancy )
+    {
+        SetNetDormancy( AcquireFromPoolSettings.NetDormancy );
+    }
 
     ReceiveAcquiredFromPool();
 }
