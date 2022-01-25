@@ -1,11 +1,37 @@
 #include "ActorPoolSubSystem.h"
 
-#include "APPooledActor.h"
+#include "APPooledActorInterface.h"
 #include "ActorPoolSettings.h"
 
+#include <Engine/Engine.h>
 #include <Engine/World.h>
+#include <GameFramework/GameModeBase.h>
 
-AAPPooledActor * FActorPoolInstances::GetAvailableInstance()
+FActorPoolInstances::FActorPoolInstances() :
+    AvailableInstanceIndex( INDEX_NONE )
+{
+}
+
+FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos )
+{
+    AcquireFromPoolSettings = pool_infos.AcquireFromPoolSettings;
+    Instances.Reserve( pool_infos.Count );
+
+    FActorSpawnParameters spawn_parameters;
+    spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    for ( auto index = 0; index < pool_infos.Count; ++index )
+    {
+        auto * actor = world->SpawnActor< AActor >( pool_infos.ActorClass.LoadSynchronous(), spawn_parameters );
+        Instances.Add( actor );
+
+        DisableActor( actor );
+    }
+
+    AvailableInstanceIndex = 0;
+}
+
+AActor * FActorPoolInstances::GetAvailableInstance()
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
@@ -13,12 +39,26 @@ AAPPooledActor * FActorPoolInstances::GetAvailableInstance()
     }
 
     auto * result = Instances[ AvailableInstanceIndex ];
+
+    result->SetActorHiddenInGame( !AcquireFromPoolSettings.bShowActor );
+    result->SetActorEnableCollision( AcquireFromPoolSettings.bEnableCollision );
+
+    if ( AcquireFromPoolSettings.bDisableNetDormancy )
+    {
+        result->SetNetDormancy( AcquireFromPoolSettings.NetDormancy );
+    }
+
+    if ( auto * pooled_actor_interface = Cast< IAPPooledActorInterface >( result ) )
+    {
+        IAPPooledActorInterface::Execute_OnAcquiredFromPool( result );
+    }
+
     AvailableInstanceIndex++;
 
     return result;
 }
 
-void FActorPoolInstances::ReturnActor( AAPPooledActor * actor )
+void FActorPoolInstances::ReturnActor( AActor * actor )
 {
     if ( actor == nullptr )
     {
@@ -32,22 +72,48 @@ void FActorPoolInstances::ReturnActor( AAPPooledActor * actor )
         return;
     }
 
-    check( AvailableInstanceIndex > 0 && AvailableInstanceIndex <= Instances.Num() );
+    DisableActor( actor );
+
+    check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
 
     Instances.Swap( index, Instances.Num() - 1 );
     AvailableInstanceIndex--;
+}
+
+void FActorPoolInstances::DestroyActors()
+{
+    for ( auto * instance : Instances )
+    {
+        instance->Destroy();
+    }
+
+    Instances.Reset();
+    AvailableInstanceIndex = 0;
+}
+
+void FActorPoolInstances::DisableActor( AActor * actor ) const
+{
+    actor->SetActorHiddenInGame( true );
+    actor->SetActorEnableCollision( false );
+    actor->SetNetDormancy( ENetDormancy::DORM_DormantAll );
+
+    if ( auto * pooled_actor_interface = Cast< IAPPooledActorInterface >( actor ) )
+    {
+        IAPPooledActorInterface::Execute_OnReturnedToPool( actor );
+    }
+}
+
+UActorPoolSubSystem::UActorPoolSubSystem()
+{
 }
 
 void UActorPoolSubSystem::Initialize( FSubsystemCollectionBase & collection )
 {
     Super::Initialize( collection );
 
-    if ( auto * settings = GetDefault< UActorPoolSettings >() )
+    if ( GetWorld()->IsGameWorld() )
     {
-        for ( const auto & pool_infos : settings->PoolInfos )
-        {
-            ActorPools.Emplace( pool_infos.ActorClass, CreateActorPoolInstance( pool_infos ) );
-        }
+        GameModeInitializedEventDelegateHandle = FGameModeEvents::GameModeInitializedEvent.AddUObject( this, &UActorPoolSubSystem::OnGameModeInitialized );
     }
 }
 
@@ -55,16 +121,15 @@ void UActorPoolSubSystem::Deinitialize()
 {
     for ( auto & key_pair : ActorPools )
     {
-        for ( auto * instance : key_pair.Value.Instances )
-        {
-            GetWorld()->DestroyActor( instance );
-        }
+        key_pair.Value.DestroyActors();
     }
+
+    FGameModeEvents::GameModeInitializedEvent.Remove( GameModeInitializedEventDelegateHandle );
 
     Super::Deinitialize();
 }
 
-AAPPooledActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AAPPooledActor > actor_class )
+AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
 {
     if ( auto * actor_instances = ActorPools.Find( actor_class ) )
     {
@@ -74,7 +139,18 @@ AAPPooledActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AAPPo
     return nullptr;
 }
 
-void UActorPoolSubSystem::ReturnActorToPool( AAPPooledActor * actor )
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf<AActor> actor_class, const FTransform transform )
+{
+    if ( auto * result = GetActorFromPool( actor_class ) )
+    {
+        result->SetActorTransform( transform, false, nullptr, ETeleportType::ResetPhysics );
+        return result;
+    }
+
+    return nullptr;
+}
+
+void UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 {
     if ( actor == nullptr )
     {
@@ -87,20 +163,18 @@ void UActorPoolSubSystem::ReturnActorToPool( AAPPooledActor * actor )
     }
 }
 
+void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )
+{
+    if ( auto * settings = GetDefault< UActorPoolSettings >() )
+    {
+        for ( const auto & pool_infos : settings->PoolInfos )
+        {
+            ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+        }
+    }
+}
+
 FActorPoolInstances UActorPoolSubSystem::CreateActorPoolInstance( const FActorPoolInfos & pool_infos ) const
 {
-    FActorPoolInstances result;
-    result.Instances.Reserve( pool_infos.Count );
-
-    FActorSpawnParameters spawn_parameters;
-    spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-    for ( auto index = 0; index < pool_infos.Count; ++index )
-    {
-        auto * actor = GetWorld()->SpawnActor< AAPPooledActor >( pool_infos.ActorClass, spawn_parameters );
-        result.Instances.Add( actor );
-    }
-
-    result.AvailableInstanceIndex = 0;
-    return result;
+    return FActorPoolInstances( GetWorld(), pool_infos );
 }
