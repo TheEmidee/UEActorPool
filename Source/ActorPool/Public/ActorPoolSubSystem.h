@@ -54,8 +54,20 @@ public:
     UFUNCTION( BlueprintCallable )
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
 
+    template< typename _ACTOR_CLASS_ >
+    _ACTOR_CLASS_ * GetActorFromPool( const TSubclassOf< AActor > actor_class )
+    {
+        return Cast< _ACTOR_CLASS_ >( GetActorFromPool( actor_class ) );
+    }
+
     UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform" )
     AActor * GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform );
+
+    template < typename _ACTOR_CLASS_ >
+    _ACTOR_CLASS_ * GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform & transform )
+    {
+        return Cast< _ACTOR_CLASS_ >( GetActorFromPoolWithTransform( actor_class, transform ) );
+    }
 
     UFUNCTION( BlueprintCallable )
     void ReturnActorToPool( AActor * actor );
