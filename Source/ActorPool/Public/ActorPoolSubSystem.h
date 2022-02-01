@@ -51,6 +51,12 @@ public:
     void Initialize( FSubsystemCollectionBase & collection ) override;
     void Deinitialize() override;
 
+    UFUNCTION( BlueprintPure )
+    bool IsActorPoolable( AActor * actor ) const;
+
+    UFUNCTION( BlueprintPure )
+    bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
+
     UFUNCTION( BlueprintCallable )
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
 

@@ -131,6 +131,34 @@ void UActorPoolSubSystem::Deinitialize()
     Super::Deinitialize();
 }
 
+bool UActorPoolSubSystem::IsActorPoolable( AActor * actor ) const
+{
+    if ( actor == nullptr )
+    {
+        return false;
+    }
+
+    return IsActorClassPoolable( actor->GetClass() );
+}
+
+bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf<AActor> actor_class ) const
+{
+    if ( actor_class == nullptr )
+    {
+        return false;
+    }
+
+    for ( const auto & key_pair : ActorPools )
+    {
+        if ( actor_class == key_pair.Key )
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
 {
     if ( auto * actor_instances = ActorPools.Find( actor_class ) )
