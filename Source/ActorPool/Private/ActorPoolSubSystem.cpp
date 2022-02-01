@@ -58,18 +58,18 @@ AActor * FActorPoolInstances::GetAvailableInstance()
     return result;
 }
 
-void FActorPoolInstances::ReturnActor( AActor * actor )
+bool FActorPoolInstances::ReturnActor( AActor * actor )
 {
     if ( actor == nullptr )
     {
-        return;
+        return false;
     }
 
     const auto index = Instances.Find( actor );
 
     if ( index == INDEX_NONE )
     {
-        return;
+        return false;
     }
 
     DisableActor( actor );
@@ -78,6 +78,8 @@ void FActorPoolInstances::ReturnActor( AActor * actor )
 
     Instances.Swap( index, Instances.Num() - 1 );
     AvailableInstanceIndex--;
+
+    return true;
 }
 
 void FActorPoolInstances::DestroyActors()
@@ -150,17 +152,19 @@ AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf<A
     return nullptr;
 }
 
-void UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
+bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 {
     if ( actor == nullptr )
     {
-        return;
+        return false;
     }
 
     if ( auto * actor_instances = ActorPools.Find( actor->GetClass() ) )
     {
-        actor_instances->ReturnActor( actor );
+        return actor_instances->ReturnActor( actor );
     }
+
+    return false;
 }
 
 void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )

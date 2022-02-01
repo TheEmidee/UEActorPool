@@ -26,7 +26,7 @@ public:
     FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos );
 
     AActor * GetAvailableInstance();
-    void ReturnActor( AActor * actor );
+    bool ReturnActor( AActor * actor );
     void DestroyActors();
 
 private:
@@ -58,7 +58,7 @@ public:
     AActor * GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform );
 
     UFUNCTION( BlueprintCallable )
-    void ReturnActorToPool( AActor * actor );
+    bool ReturnActorToPool( AActor * actor );
 
 private:
 
