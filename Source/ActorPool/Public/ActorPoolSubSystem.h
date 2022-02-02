@@ -26,7 +26,7 @@ public:
     FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos );
 
     AActor * GetAvailableInstance();
-    void ReturnActor( AActor * actor );
+    bool ReturnActor( AActor * actor );
     void DestroyActors();
 
 private:
@@ -51,6 +51,12 @@ public:
     void Initialize( FSubsystemCollectionBase & collection ) override;
     void Deinitialize() override;
 
+    UFUNCTION( BlueprintPure )
+    bool IsActorPoolable( AActor * actor ) const;
+
+    UFUNCTION( BlueprintPure )
+    bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
+
     UFUNCTION( BlueprintCallable )
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
 
@@ -70,7 +76,7 @@ public:
     }
 
     UFUNCTION( BlueprintCallable )
-    void ReturnActorToPool( AActor * actor );
+    bool ReturnActorToPool( AActor * actor );
 
 private:
 
