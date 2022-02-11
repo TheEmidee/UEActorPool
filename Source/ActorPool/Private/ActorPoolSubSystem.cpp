@@ -28,8 +28,8 @@ FActorPoolInstances::FActorPoolInstances() :
 }
 
 FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos ) :
-    PoolInfos( pool_infos ),
-    AvailableInstanceIndex( INDEX_NONE )
+    AvailableInstanceIndex( INDEX_NONE ),
+    PoolInfos( pool_infos )
 {
     Instances.Reserve( pool_infos.Count );
 
