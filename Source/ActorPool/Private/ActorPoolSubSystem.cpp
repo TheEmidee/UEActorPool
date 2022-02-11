@@ -7,51 +7,65 @@
 #include <Engine/World.h>
 #include <GameFramework/GameModeBase.h>
 
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
     TEXT( "ActorPool.DestroyUnusedInstancesInPools" ),
     TEXT( "Destroys all actors in the pools which have not been acquired." ),
     FConsoleCommandWithWorldDelegate::CreateStatic( &UActorPoolSubSystem::DestroyUnusedInstancesInPools ),
-    ECVF_Cheat );
+    ECVF_Default );
+
+static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
+    TEXT( "ActorPool.ForceInstanceCreationWhenPoolIsEmpty" ),
+    1,
+    TEXT( "When on, will force to create actor instances when the pool is empty.\n" )
+        TEXT( "0: Disable, 1: Enable" ),
+    ECVF_Default );
+#endif
 
 FActorPoolInstances::FActorPoolInstances() :
     AvailableInstanceIndex( INDEX_NONE )
 {
 }
 
-FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos )
+FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos ) :
+    PoolInfos( pool_infos ),
+    AvailableInstanceIndex( INDEX_NONE )
 {
-    AcquireFromPoolSettings = pool_infos.AcquireFromPoolSettings;
     Instances.Reserve( pool_infos.Count );
-
-    FActorSpawnParameters spawn_parameters;
-    spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
     for ( auto index = 0; index < pool_infos.Count; ++index )
     {
-        auto * actor = world->SpawnActor< AActor >( pool_infos.ActorClass.LoadSynchronous(), spawn_parameters );
-        Instances.Add( actor );
-
+        auto * actor = SpawnActorAndAddToInstances( world );
         DisableActor( actor );
     }
 
     AvailableInstanceIndex = 0;
 }
 
-AActor * FActorPoolInstances::GetAvailableInstance()
+AActor * FActorPoolInstances::GetAvailableInstance( const UObject * world_context )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
-        return nullptr;
+        const auto can_create_instance = PoolInfos.bAllowNewInstancesWhenPoolIsEmpty
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+                                         || GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread()
+#endif
+            ;
+
+        if ( can_create_instance )
+        {
+            SpawnActorAndAddToInstances( world_context->GetWorld() );
+        }
     }
 
     auto * result = Instances[ AvailableInstanceIndex ];
 
-    result->SetActorHiddenInGame( !AcquireFromPoolSettings.bShowActor );
-    result->SetActorEnableCollision( AcquireFromPoolSettings.bEnableCollision );
+    result->SetActorHiddenInGame( !PoolInfos.AcquireFromPoolSettings.bShowActor );
+    result->SetActorEnableCollision( PoolInfos.AcquireFromPoolSettings.bEnableCollision );
 
-    if ( AcquireFromPoolSettings.bDisableNetDormancy )
+    if ( PoolInfos.AcquireFromPoolSettings.bDisableNetDormancy )
     {
-        result->SetNetDormancy( AcquireFromPoolSettings.NetDormancy );
+        result->SetNetDormancy( PoolInfos.AcquireFromPoolSettings.NetDormancy );
     }
 
     if ( auto * pooled_actor_interface = Cast< IAPPooledActorInterface >( result ) )
@@ -121,6 +135,17 @@ void FActorPoolInstances::DisableActor( AActor * actor ) const
     }
 }
 
+AActor * FActorPoolInstances::SpawnActorAndAddToInstances( UWorld * world )
+{
+    FActorSpawnParameters spawn_parameters;
+    spawn_parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+    auto * actor = world->SpawnActor< AActor >( PoolInfos.ActorClass.LoadSynchronous(), spawn_parameters );
+    Instances.Add( actor );
+
+    return actor;
+}
+
 UActorPoolSubSystem::UActorPoolSubSystem()
 {
 }
@@ -175,19 +200,19 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return false;
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
+AActor * UActorPoolSubSystem::GetActorFromPool( UObject * world_context, const TSubclassOf< AActor > actor_class )
 {
     if ( auto * actor_instances = ActorPools.Find( actor_class ) )
     {
-        return actor_instances->GetAvailableInstance();
+        return actor_instances->GetAvailableInstance( world_context );
     }
 
     return nullptr;
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform transform )
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( UObject * world_context, const TSubclassOf< AActor > actor_class, const FTransform transform )
 {
-    if ( auto * result = GetActorFromPool( actor_class ) )
+    if ( auto * result = GetActorFromPool( world_context, actor_class ) )
     {
         result->SetActorTransform( transform, false, nullptr, ETeleportType::ResetPhysics );
         return result;
@@ -211,6 +236,7 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
     return false;
 }
 
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
 {
     if ( world == nullptr )
@@ -226,6 +252,7 @@ void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
         }
     }
 }
+#endif
 
 void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )
 {

@@ -43,6 +43,9 @@ struct FActorPoolInfos
     int Count;
 
     UPROPERTY( EditAnywhere )
+    uint8 bAllowNewInstancesWhenPoolIsEmpty : 1;
+
+    UPROPERTY( EditAnywhere )
     FAPPooledActorAcquireFromPoolSettings AcquireFromPoolSettings;
 };
 
