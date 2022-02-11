@@ -7,6 +7,12 @@
 #include <Engine/World.h>
 #include <GameFramework/GameModeBase.h>
 
+static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
+    TEXT( "ActorPool.DestroyUnusedInstancesInPools" ),
+    TEXT( "Destroys all actors in the pools which have not been acquired." ),
+    FConsoleCommandWithWorldDelegate::CreateStatic( &UActorPoolSubSystem::DestroyUnusedInstancesInPools ),
+    ECVF_Cheat );
+
 FActorPoolInstances::FActorPoolInstances() :
     AvailableInstanceIndex( INDEX_NONE )
 {
@@ -93,6 +99,16 @@ void FActorPoolInstances::DestroyActors()
     AvailableInstanceIndex = 0;
 }
 
+void FActorPoolInstances::DestroyUnusedInstances()
+{
+    for ( auto index = AvailableInstanceIndex; index < Instances.Num(); index++ )
+    {
+        Instances[ index ]->Destroy();
+    }
+
+    Instances.SetNum( AvailableInstanceIndex );
+}
+
 void FActorPoolInstances::DisableActor( AActor * actor ) const
 {
     actor->SetActorHiddenInGame( true );
@@ -141,7 +157,7 @@ bool UActorPoolSubSystem::IsActorPoolable( AActor * actor ) const
     return IsActorClassPoolable( actor->GetClass() );
 }
 
-bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf<AActor> actor_class ) const
+bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > actor_class ) const
 {
     if ( actor_class == nullptr )
     {
@@ -169,7 +185,7 @@ AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > acto
     return nullptr;
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf<AActor> actor_class, const FTransform transform )
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform transform )
 {
     if ( auto * result = GetActorFromPool( actor_class ) )
     {
@@ -193,6 +209,22 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
     }
 
     return false;
+}
+
+void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
+{
+    if ( world == nullptr )
+    {
+        return;
+    }
+
+    if ( auto * subsystem = world->GetSubsystem< UActorPoolSubSystem >() )
+    {
+        for ( auto & key_pair : subsystem->ActorPools )
+        {
+            key_pair.Value.DestroyUnusedInstances();
+        }
+    }
 }
 
 void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )

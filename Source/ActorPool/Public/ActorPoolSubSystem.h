@@ -21,16 +21,15 @@ struct FActorPoolInstances
     GENERATED_USTRUCT_BODY()
 
 public:
-
     FActorPoolInstances();
     FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos );
 
     AActor * GetAvailableInstance();
     bool ReturnActor( AActor * actor );
     void DestroyActors();
+    void DestroyUnusedInstances();
 
 private:
-
     void DisableActor( AActor * actor ) const;
 
     UPROPERTY()
@@ -60,7 +59,7 @@ public:
     UFUNCTION( BlueprintCallable )
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
 
-    template< typename _ACTOR_CLASS_ >
+    template < typename _ACTOR_CLASS_ >
     _ACTOR_CLASS_ * GetActorFromPool( const TSubclassOf< AActor > actor_class )
     {
         return Cast< _ACTOR_CLASS_ >( GetActorFromPool( actor_class ) );
@@ -78,8 +77,9 @@ public:
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
 
-private:
+    static void DestroyUnusedInstancesInPools( UWorld * world );
 
+private:
     void OnGameModeInitialized( AGameModeBase * game_mode );
     FActorPoolInstances CreateActorPoolInstance( const FActorPoolInfos & pool_infos ) const;
 
