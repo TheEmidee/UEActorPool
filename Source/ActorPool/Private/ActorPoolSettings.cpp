@@ -8,7 +8,8 @@ FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings():
 {}
 
 FActorPoolInfos::FActorPoolInfos():
-    Count( 0 )
+    Count( 0 ),
+    bAllowNewInstancesWhenPoolIsEmpty( true )
 {}
 
 FName UActorPoolSettings::GetCategoryName() const
