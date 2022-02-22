@@ -20,6 +20,13 @@ static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEm
     TEXT( "When on, will force to create actor instances when the pool is empty.\n" )
         TEXT( "0: Disable, 1: Enable" ),
     ECVF_Default );
+
+static TAutoConsoleVariable< int32 > GActorPoolDisable(
+    TEXT( "ActorPool.Disable" ),
+    0,
+    TEXT( "When on, will not create any instances.\n" )
+        TEXT( "0: Enable the pools, 1: Disable the pools" ),
+    ECVF_Default );
 #endif
 
 FActorPoolInstances::FActorPoolInstances() :
@@ -256,6 +263,13 @@ void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
 
 void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )
 {
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+    if ( GActorPoolDisable.GetValueOnGameThread() == 1 )
+    {
+        return;
+    }
+#endif
+
     if ( auto * settings = GetDefault< UActorPoolSettings >() )
     {
         for ( const auto & pool_infos : settings->PoolInfos )
