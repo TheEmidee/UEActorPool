@@ -57,7 +57,7 @@ public:
     UFUNCTION( BlueprintPure )
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
-    UFUNCTION( BlueprintCallable, meta = ( WorldContext = "world_context" ) )
+    UFUNCTION( BlueprintCallable, meta = ( WorldContext = "world_context", DeterminesOutputType = "actor_class" ) )
     AActor * GetActorFromPool( UObject * world_context, TSubclassOf< AActor > actor_class );
 
     template < typename _ACTOR_CLASS_ >
@@ -66,7 +66,7 @@ public:
         return Cast< _ACTOR_CLASS_ >( GetActorFromPool( world_context, actor_class ) );
     }
 
-    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform", meta = ( WorldContext = "world_context" ) )
+    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform", meta = ( WorldContext = "world_context", DeterminesOutputType = "actor_class" ) )
     AActor * GetActorFromPoolWithTransform( UObject * world_context, TSubclassOf< AActor > actor_class, FTransform transform );
 
     template < typename _ACTOR_CLASS_ >
