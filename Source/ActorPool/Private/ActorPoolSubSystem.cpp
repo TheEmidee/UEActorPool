@@ -113,7 +113,10 @@ void FActorPoolInstances::DestroyActors()
 {
     for ( auto * instance : Instances )
     {
-        instance->Destroy();
+        if ( IsValid( instance ) )
+        {
+            instance->Destroy();
+        }
     }
 
     Instances.Reset();
@@ -124,7 +127,10 @@ void FActorPoolInstances::DestroyUnusedInstances()
 {
     for ( auto index = AvailableInstanceIndex; index < Instances.Num(); index++ )
     {
-        Instances[ index ]->Destroy();
+        if ( auto * instance = Instances[ index ] )
+        {
+            instance->Destroy();
+        }
     }
 
     Instances.SetNum( AvailableInstanceIndex );
