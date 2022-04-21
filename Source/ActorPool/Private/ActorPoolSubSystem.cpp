@@ -172,9 +172,12 @@ void UActorPoolSubSystem::Initialize( FSubsystemCollectionBase & collection )
 {
     Super::Initialize( collection );
 
-    if ( GetWorld()->IsGameWorld() )
+    if ( auto * world = GetWorld()  )
     {
-        GameModeInitializedEventDelegateHandle = FGameModeEvents::GameModeInitializedEvent.AddUObject( this, &UActorPoolSubSystem::OnGameModeInitialized );
+        if ( world->IsGameWorld() )
+        {
+            world->OnWorldBeginPlay.AddUObject( this, &UActorPoolSubSystem::OnWorldBeginPlay );
+        }
     }
 }
 
@@ -185,7 +188,10 @@ void UActorPoolSubSystem::Deinitialize()
         key_pair.Value.DestroyActors();
     }
 
-    FGameModeEvents::GameModeInitializedEvent.Remove( GameModeInitializedEventDelegateHandle );
+    if ( auto * world = GetWorld() )
+    {
+        world->OnWorldBeginPlay.RemoveAll( this );
+    }
 
     Super::Deinitialize();
 }
@@ -272,7 +278,7 @@ void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
 }
 #endif
 
-void UActorPoolSubSystem::OnGameModeInitialized( AGameModeBase * game_mode )
+void UActorPoolSubSystem::OnWorldBeginPlay()
 {
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     if ( GActorPoolDisable.GetValueOnGameThread() == 1 )

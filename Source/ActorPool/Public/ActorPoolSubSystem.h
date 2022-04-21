@@ -81,11 +81,9 @@ public:
     static void DestroyUnusedInstancesInPools( UWorld * world );
 
 private:
-    void OnGameModeInitialized( AGameModeBase * game_mode );
+    void OnWorldBeginPlay();
     FActorPoolInstances CreateActorPoolInstance( const FActorPoolInfos & pool_infos ) const;
 
     UPROPERTY()
     TMap< TSubclassOf< AActor >, FActorPoolInstances > ActorPools;
-
-    FDelegateHandle GameModeInitializedEventDelegateHandle;
 };
