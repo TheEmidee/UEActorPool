@@ -161,7 +161,8 @@ void FActorPoolInstances::DestroyUnusedInstances()
 void FActorPoolInstances::DumpPoolInfos( FOutputDevice & output_device ) const
 {
     output_device.Logf( ELogVerbosity::Verbose, TEXT( "Pool for class %s" ), *PoolInfos.ActorClass.ToString() );
-    output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Instance Count : %i" ), PoolInfos.Count );
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Total Instance Count : %i" ), PoolInfos.Count );
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Alive Instance Count : %i" ), AvailableInstanceIndex );
     output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Available Instance Count : %i" ), ( PoolInfos.Count - AvailableInstanceIndex ) );
 }
 #endif
