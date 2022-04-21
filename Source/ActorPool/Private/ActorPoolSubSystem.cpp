@@ -11,7 +11,23 @@
 static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
     TEXT( "ActorPool.DestroyUnusedInstancesInPools" ),
     TEXT( "Destroys all actors in the pools which have not been acquired." ),
-    FConsoleCommandWithWorldDelegate::CreateStatic( &UActorPoolSubSystem::DestroyUnusedInstancesInPools ),
+    FConsoleCommandWithWorldDelegate::CreateLambda( []( const UWorld * world ) {
+        if ( auto * system = world->GetSubsystem< UActorPoolSubSystem >() )
+        {
+            system->DestroyUnusedInstancesInPools();
+        }
+    } ),
+    ECVF_Default );
+
+static FAutoConsoleCommandWithWorldArgsAndOutputDevice GActorPoolDumpPoolInfos(
+    TEXT( "ActorPool.DumpPoolInfos" ),
+    TEXT( "Dumps infos about the pools." ),
+    FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateLambda( []( const TArray< FString > & /*args*/, const UWorld * world, FOutputDevice & output_device ) {
+        if ( const auto * system = world->GetSubsystem< UActorPoolSubSystem >() )
+        {
+            system->DumpPoolInfos( output_device );
+        }
+    } ),
     ECVF_Default );
 
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
@@ -141,6 +157,15 @@ void FActorPoolInstances::DestroyUnusedInstances()
     Instances.SetNum( AvailableInstanceIndex );
 }
 
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+void FActorPoolInstances::DumpPoolInfos( FOutputDevice & output_device ) const
+{
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "Pool for class %s" ), *PoolInfos.ActorClass.ToString() );
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Instance Count : %i" ), PoolInfos.Count );
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "   Available Instance Count : %i" ), ( PoolInfos.Count - AvailableInstanceIndex ) );
+}
+#endif
+
 void FActorPoolInstances::DisableActor( AActor * actor ) const
 {
     actor->SetActorHiddenInGame( true );
@@ -172,7 +197,7 @@ void UActorPoolSubSystem::Initialize( FSubsystemCollectionBase & collection )
 {
     Super::Initialize( collection );
 
-    if ( auto * world = GetWorld()  )
+    if ( auto * world = GetWorld() )
     {
         if ( world->IsGameWorld() )
         {
@@ -261,19 +286,21 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 }
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
-void UActorPoolSubSystem::DestroyUnusedInstancesInPools( UWorld * world )
+void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 {
-    if ( world == nullptr )
+    for ( auto & key_pair : ActorPools )
     {
-        return;
+        key_pair.Value.DestroyUnusedInstances();
     }
+}
 
-    if ( auto * subsystem = world->GetSubsystem< UActorPoolSubSystem >() )
+void UActorPoolSubSystem::DumpPoolInfos( FOutputDevice & output_device ) const
+{
+    output_device.Logf( ELogVerbosity::Verbose, TEXT( "Dumping Actor Pool Infos :" ) );
+
+    for ( auto & key_pair : ActorPools )
     {
-        for ( auto & key_pair : subsystem->ActorPools )
-        {
-            key_pair.Value.DestroyUnusedInstances();
-        }
+        key_pair.Value.DumpPoolInfos( output_device );
     }
 }
 #endif

@@ -29,6 +29,10 @@ public:
     void DestroyActors();
     void DestroyUnusedInstances();
 
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+    void DumpPoolInfos( FOutputDevice & output_device ) const;
+#endif
+
 private:
     void DisableActor( AActor * actor ) const;
     AActor * SpawnActorAndAddToInstances( UWorld * world );
@@ -78,7 +82,10 @@ public:
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
 
-    static void DestroyUnusedInstancesInPools( UWorld * world );
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+    void DestroyUnusedInstancesInPools();
+    void DumpPoolInfos( FOutputDevice & output_device ) const;
+#endif
 
 private:
     void OnWorldBeginPlay();
