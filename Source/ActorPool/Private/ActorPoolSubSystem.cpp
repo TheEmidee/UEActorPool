@@ -105,7 +105,8 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
 
     if ( Instances.Num() > 1 )
     {
-        Instances.Swap( index, AvailableInstanceIndex );
+        Instances.RemoveAt( index, 1, false );
+        Instances.Insert( actor, AvailableInstanceIndex - 1 );
     }
 
     AvailableInstanceIndex--;
