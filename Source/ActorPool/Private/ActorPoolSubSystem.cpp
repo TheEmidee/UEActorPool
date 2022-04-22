@@ -65,7 +65,7 @@ FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos 
     AvailableInstanceIndex = 0;
 }
 
-AActor * FActorPoolInstances::GetAvailableInstance( const UObject * world_context )
+AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
@@ -77,7 +77,7 @@ AActor * FActorPoolInstances::GetAvailableInstance( const UObject * world_contex
 
         if ( can_create_instance )
         {
-            SpawnActorAndAddToInstances( world_context->GetWorld() );
+            SpawnActorAndAddToInstances( world );
         }
     }
 
@@ -250,19 +250,19 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return false;
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPool( UObject * world_context, const TSubclassOf< AActor > actor_class )
+AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
 {
     if ( auto * actor_instances = ActorPools.Find( actor_class ) )
     {
-        return actor_instances->GetAvailableInstance( world_context );
+        return actor_instances->GetAvailableInstance( GetWorld() );
     }
 
     return nullptr;
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( UObject * world_context, const TSubclassOf< AActor > actor_class, const FTransform transform )
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform transform )
 {
-    if ( auto * result = GetActorFromPool( world_context, actor_class ) )
+    if ( auto * result = GetActorFromPool( actor_class ) )
     {
         result->SetActorTransform( transform, false, nullptr, ETeleportType::ResetPhysics );
         return result;
