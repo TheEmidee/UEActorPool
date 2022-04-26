@@ -24,10 +24,14 @@ public:
     FActorPoolInstances();
     FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos );
 
-    AActor * GetAvailableInstance( const UObject * world_context );
+    AActor * GetAvailableInstance( UWorld * world );
     bool ReturnActor( AActor * actor );
     void DestroyActors();
     void DestroyUnusedInstances();
+
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+    void DumpPoolInfos( FOutputDevice & output_device ) const;
+#endif
 
 private:
     void DisableActor( AActor * actor ) const;
@@ -57,35 +61,36 @@ public:
     UFUNCTION( BlueprintPure )
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
-    UFUNCTION( BlueprintCallable, meta = ( WorldContext = "world_context", DeterminesOutputType = "actor_class" ) )
-    AActor * GetActorFromPool( UObject * world_context, TSubclassOf< AActor > actor_class );
+    UFUNCTION( BlueprintCallable, meta = ( DeterminesOutputType = "actor_class" ) )
+    AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
 
     template < typename _ACTOR_CLASS_ >
-    _ACTOR_CLASS_ * GetActorFromPool( UObject * world_context, const TSubclassOf< AActor > actor_class )
+    _ACTOR_CLASS_ * GetActorFromPool( const TSubclassOf< AActor > actor_class )
     {
-        return Cast< _ACTOR_CLASS_ >( GetActorFromPool( world_context, actor_class ) );
+        return Cast< _ACTOR_CLASS_ >( GetActorFromPool( actor_class ) );
     }
 
-    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform", meta = ( WorldContext = "world_context", DeterminesOutputType = "actor_class" ) )
-    AActor * GetActorFromPoolWithTransform( UObject * world_context, TSubclassOf< AActor > actor_class, FTransform transform );
+    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform", meta = ( DeterminesOutputType = "actor_class" ) )
+    AActor * GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform );
 
     template < typename _ACTOR_CLASS_ >
-    _ACTOR_CLASS_ * GetActorFromPoolWithTransform( UObject * world_context, const TSubclassOf< AActor > actor_class, const FTransform & transform )
+    _ACTOR_CLASS_ * GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform & transform )
     {
-        return Cast< _ACTOR_CLASS_ >( GetActorFromPoolWithTransform( world_context, actor_class, transform ) );
+        return Cast< _ACTOR_CLASS_ >( GetActorFromPoolWithTransform( actor_class, transform ) );
     }
 
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
 
-    static void DestroyUnusedInstancesInPools( UWorld * world );
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+    void DestroyUnusedInstancesInPools();
+    void DumpPoolInfos( FOutputDevice & output_device ) const;
+#endif
 
 private:
-    void OnGameModeInitialized( AGameModeBase * game_mode );
+    void OnWorldBeginPlay();
     FActorPoolInstances CreateActorPoolInstance( const FActorPoolInfos & pool_infos ) const;
 
     UPROPERTY()
     TMap< TSubclassOf< AActor >, FActorPoolInstances > ActorPools;
-
-    FDelegateHandle GameModeInitializedEventDelegateHandle;
 };
