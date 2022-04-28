@@ -1,48 +1,11 @@
 #pragma once
 
-#include "ActorPoolSettings.h"
-#include "Engine/GameInstance.h"
-#include "GameFramework/GameModeBase.h"
-
 #include <CoreMinimal.h>
 #include <Subsystems/WorldSubsystem.h>
 
 #include "ActorPoolSubSystem.generated.h"
 
-class UGameInstance;
-class AActor;
-struct FActorPoolInfos;
-class AGameModeBase;
-struct FWorldContext;
-
-USTRUCT()
-struct FActorPoolInstances
-{
-    GENERATED_USTRUCT_BODY()
-
-public:
-    FActorPoolInstances();
-    FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos );
-
-    AActor * GetAvailableInstance( UWorld * world );
-    bool ReturnActor( AActor * actor );
-    void DestroyActors();
-    void DestroyUnusedInstances();
-
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
-    void DumpPoolInfos( FOutputDevice & output_device ) const;
-#endif
-
-private:
-    void DisableActor( AActor * actor ) const;
-    AActor * SpawnActorAndAddToInstances( UWorld * world );
-
-    UPROPERTY()
-    TArray< AActor * > Instances;
-
-    int AvailableInstanceIndex;
-    FActorPoolInfos PoolInfos;
-};
+class AActorPoolActor;
 
 UCLASS()
 class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
@@ -50,11 +13,6 @@ class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
     GENERATED_BODY()
 
 public:
-    UActorPoolSubSystem();
-
-    void Initialize( FSubsystemCollectionBase & collection ) override;
-    void Deinitialize() override;
-
     UFUNCTION( BlueprintPure )
     bool IsActorPoolable( AActor * actor ) const;
 
@@ -82,15 +40,14 @@ public:
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
 
+    void RegisterActorPoolActor( AActorPoolActor * actor_pool_actor );
+
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     void DestroyUnusedInstancesInPools();
     void DumpPoolInfos( FOutputDevice & output_device ) const;
 #endif
 
 private:
-    void OnWorldBeginPlay();
-    FActorPoolInstances CreateActorPoolInstance( const FActorPoolInfos & pool_infos ) const;
-
     UPROPERTY()
-    TMap< TSubclassOf< AActor >, FActorPoolInstances > ActorPools;
+    AActorPoolActor * ActorPoolActor;
 };
