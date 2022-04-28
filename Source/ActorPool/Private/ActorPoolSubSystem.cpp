@@ -2,6 +2,32 @@
 
 #include "ActorPoolActor.h"
 
+#include <Engine/World.h>
+
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
+    TEXT( "ActorPool.DestroyUnusedInstancesInPools" ),
+    TEXT( "Destroys all actors in the pools which have not been acquired." ),
+    FConsoleCommandWithWorldDelegate::CreateLambda( []( const UWorld * world ) {
+        if ( auto * system = world->GetSubsystem< UActorPoolSubSystem >() )
+        {
+            system->DestroyUnusedInstancesInPools();
+        }
+    } ),
+    ECVF_Default );
+
+static FAutoConsoleCommandWithWorldArgsAndOutputDevice GActorPoolDumpPoolInfos(
+    TEXT( "ActorPool.DumpPoolInfos" ),
+    TEXT( "Dumps infos about the pools." ),
+    FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateLambda( []( const TArray< FString > & /*args*/, const UWorld * world, FOutputDevice & output_device ) {
+        if ( const auto * system = world->GetSubsystem< UActorPoolSubSystem >() )
+        {
+            system->DumpPoolInfos( output_device );
+        }
+    } ),
+    ECVF_Default );
+#endif
+
 bool UActorPoolSubSystem::IsActorPoolable( AActor * actor ) const
 {
     if ( actor == nullptr )
