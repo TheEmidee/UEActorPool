@@ -7,6 +7,8 @@
 
 class AActorPoolActor;
 
+DECLARE_EVENT( UActorPoolSubSystem, FSWOnActorPoolReadyEvent )
+
 UCLASS()
 class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
 {
@@ -42,6 +44,10 @@ public:
 
     void RegisterActorPoolActor( AActorPoolActor * actor_pool_actor );
 
+    FSWOnActorPoolReadyEvent & OnActorPoolReady();
+
+    bool IsActorPoolReady() const;
+
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     void DestroyUnusedInstancesInPools();
     void DumpPoolInfos( FOutputDevice & output_device ) const;
@@ -50,4 +56,16 @@ public:
 private:
     UPROPERTY()
     AActorPoolActor * ActorPoolActor;
+
+    FSWOnActorPoolReadyEvent OnActorPoolReadyEvent;
 };
+
+FORCEINLINE FSWOnActorPoolReadyEvent & UActorPoolSubSystem::OnActorPoolReady()
+{
+    return OnActorPoolReadyEvent;
+}
+
+FORCEINLINE bool UActorPoolSubSystem::IsActorPoolReady() const
+{
+    return ActorPoolActor != nullptr;
+}

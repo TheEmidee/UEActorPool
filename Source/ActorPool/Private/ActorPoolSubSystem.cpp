@@ -82,7 +82,11 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )
 {
     ActorPoolActor = actor_pool_actor;
-    ensureAlwaysMsgf( ActorPoolActor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) );
+
+    if ( ensureAlwaysMsgf( ActorPoolActor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
+    {
+        OnActorPoolReadyEvent.Broadcast();
+    }
 }
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )

@@ -175,10 +175,9 @@ void AActorPoolActor::BeginPlay()
 {
     Super::BeginPlay();
 
-    // Register itself to the subsystem
-    if ( auto * actor_pool_system = GetWorld()->GetSubsystem< UActorPoolSubSystem >() )
+    if ( !HasAuthority() )
     {
-        actor_pool_system->RegisterActorPoolActor( this );
+        return;
     }
 
     //Initialize the pools
@@ -195,6 +194,12 @@ void AActorPoolActor::BeginPlay()
         {
             ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
         }
+    }
+
+    // Register itself to the subsystem
+    if ( auto * actor_pool_system = GetWorld()->GetSubsystem< UActorPoolSubSystem >() )
+    {
+        actor_pool_system->RegisterActorPoolActor( this );
     }
 }
 
