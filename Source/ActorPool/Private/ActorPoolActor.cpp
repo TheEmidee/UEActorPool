@@ -175,6 +175,11 @@ void AActorPoolActor::BeginPlay()
 {
     Super::BeginPlay();
 
+    if ( !HasAuthority() )
+    {
+        return;
+    }
+
     //Initialize the pools
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     if ( GActorPoolDisable.GetValueOnGameThread() == 1 )
