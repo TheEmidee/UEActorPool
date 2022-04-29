@@ -200,7 +200,6 @@ void AActorPoolActor::BeginPlay()
     if ( auto * actor_pool_system = GetWorld()->GetSubsystem< UActorPoolSubSystem >() )
     {
         actor_pool_system->RegisterActorPoolActor( this );
-        actor_pool_system->OnActorPoolReady().Broadcast();
     }
 }
 
