@@ -71,7 +71,7 @@ AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< 
 
 bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( ActorPoolActor == nullptr )
     {
         return false;
     }
