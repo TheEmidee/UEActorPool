@@ -82,10 +82,19 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )
 {
     ActorPoolActor = actor_pool_actor;
+    OnActorPoolReadyEvent.Broadcast();
+}
 
-    if ( ensureAlwaysMsgf( ActorPoolActor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
+void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate )
+{
+    if ( !OnActorPoolReadyEvent.IsBoundToObject( delegate.GetUObject() ) )
     {
-        OnActorPoolReadyEvent.Broadcast();
+        OnActorPoolReadyEvent.Add( delegate );
+    }
+
+    if ( IsActorPoolReady() )
+    {
+        delegate.Execute();
     }
 }
 
