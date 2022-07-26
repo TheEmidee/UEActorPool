@@ -81,6 +81,16 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )
 {
+    if ( !ensureAlwaysMsgf( actor_pool_actor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
+    {
+        return;
+    }
+
+    if ( !ensureAlwaysMsgf( ActorPoolActor == nullptr, TEXT( "The ActorPoolActor is already set!" ) ) )
+    {
+        return;
+    }
+
     ActorPoolActor = actor_pool_actor;
     OnActorPoolReadyEvent.Broadcast();
 }
