@@ -43,10 +43,8 @@ public:
     bool ReturnActorToPool( AActor * actor );
 
     void RegisterActorPoolActor( AActorPoolActor * actor_pool_actor );
-
-    FSWOnActorPoolReadyEvent & OnActorPoolReady();
-
     bool IsActorPoolReady() const;
+    void OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate );
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     void DestroyUnusedInstancesInPools();
@@ -57,13 +55,8 @@ private:
     UPROPERTY()
     AActorPoolActor * ActorPoolActor;
 
-    FSWOnActorPoolReadyEvent OnActorPoolReadyEvent;
+    FSimpleMulticastDelegate OnActorPoolReadyEvent;
 };
-
-FORCEINLINE FSWOnActorPoolReadyEvent & UActorPoolSubSystem::OnActorPoolReady()
-{
-    return OnActorPoolReadyEvent;
-}
 
 FORCEINLINE bool UActorPoolSubSystem::IsActorPoolReady() const
 {

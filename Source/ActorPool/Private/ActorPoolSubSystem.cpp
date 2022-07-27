@@ -81,11 +81,30 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )
 {
-    ActorPoolActor = actor_pool_actor;
-
-    if ( ensureAlwaysMsgf( ActorPoolActor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
+    if ( !ensureAlwaysMsgf( actor_pool_actor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
     {
-        OnActorPoolReadyEvent.Broadcast();
+        return;
+    }
+
+    if ( !ensureAlwaysMsgf( ActorPoolActor == nullptr, TEXT( "The ActorPoolActor is already set!" ) ) )
+    {
+        return;
+    }
+
+    ActorPoolActor = actor_pool_actor;
+    OnActorPoolReadyEvent.Broadcast();
+}
+
+void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate )
+{
+    if ( !OnActorPoolReadyEvent.IsBoundToObject( delegate.GetUObject() ) )
+    {
+        OnActorPoolReadyEvent.Add( delegate );
+    }
+
+    if ( IsActorPoolReady() )
+    {
+        delegate.Execute();
     }
 }
 
