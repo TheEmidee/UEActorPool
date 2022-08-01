@@ -40,7 +40,7 @@ bool UActorPoolSubSystem::IsActorPoolable( AActor * actor ) const
 
 bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > actor_class ) const
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return false;
     }
@@ -50,7 +50,7 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
 
 AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return nullptr;
     }
@@ -111,7 +111,7 @@ void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FSimpleMulticastDele
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return;
     }
@@ -121,7 +121,7 @@ void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 
 void UActorPoolSubSystem::DumpPoolInfos( FOutputDevice & output_device ) const
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return;
     }
