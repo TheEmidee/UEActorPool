@@ -169,16 +169,12 @@ AActor * FActorPoolInstances::SpawnActorAndAddToInstances( UWorld * world )
 AActorPoolActor::AActorPoolActor()
 {
     PrimaryActorTick.bCanEverTick = false;
+    bReplicates = true;
 }
 
 void AActorPoolActor::BeginPlay()
 {
     Super::BeginPlay();
-
-    if ( !HasAuthority() )
-    {
-        return;
-    }
 
     //Initialize the pools
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
@@ -192,7 +188,10 @@ void AActorPoolActor::BeginPlay()
     {
         for ( const auto & pool_infos : settings->PoolInfos )
         {
-            ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+            if ( HasAuthority() && pool_infos.bSpawnOnServer || !HasAuthority() && pool_infos.bSpawnOnClients )
+            {
+                ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+            }
         }
     }
 
