@@ -53,6 +53,9 @@ struct FActorPoolInfos
 
     UPROPERTY( EditAnywhere )
     uint8 bSpawnOnClients : 1;
+
+    UPROPERTY( EditAnywhere )
+    uint8 bLoopingPool : 1;
 };
 
 UCLASS( config = Game, defaultconfig, meta = ( DisplayName = "ActorPool" ) )

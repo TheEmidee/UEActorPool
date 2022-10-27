@@ -11,7 +11,8 @@ FActorPoolInfos::FActorPoolInfos() :
     Count( 0 ),
     bAllowNewInstancesWhenPoolIsEmpty( true ),
     bSpawnOnServer( true ),
-    bSpawnOnClients( false )
+    bSpawnOnClients( false ),
+    bLoopingPool( false )
 {}
 
 FName UActorPoolSettings::GetCategoryName() const
