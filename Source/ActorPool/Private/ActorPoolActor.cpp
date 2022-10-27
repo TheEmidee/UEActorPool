@@ -8,7 +8,7 @@
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
     TEXT( "ActorPool.ForceInstanceCreationWhenPoolIsEmpty" ),
-    1,
+    0,
     TEXT( "When on, will force to create actor instances when the pool is empty.\n" )
         TEXT( "0: Disable, 1: Enable" ),
     ECVF_Default );
@@ -55,6 +55,14 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
         {
             SpawnActorAndAddToInstances( world );
         }
+        else if ( PoolInfos.bLoopingPool )
+        {
+            AvailableInstanceIndex = 0;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     auto * result = Instances[ AvailableInstanceIndex ];
@@ -95,13 +103,18 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
 
     check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
 
-    if ( Instances.Num() > 1 )
+    if ( PoolInfos.bLoopingPool && AvailableInstanceIndex == 0 )
     {
-        Instances.RemoveAt( index, 1, false );
-        Instances.Insert( actor, AvailableInstanceIndex - 1 );
+        AvailableInstanceIndex = Instances.Num();
     }
 
     AvailableInstanceIndex--;
+
+    if ( Instances.Num() > 1 )
+    {
+        Instances.RemoveAt( index, 1, false );
+        Instances.Insert( actor, AvailableInstanceIndex );
+    }
 
     return true;
 }
