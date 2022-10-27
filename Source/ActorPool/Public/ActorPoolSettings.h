@@ -2,8 +2,8 @@
 
 #include <CoreMinimal.h>
 #include <Engine/DeveloperSettings.h>
-#include <Templates/SubclassOf.h>
 #include <Engine/EngineTypes.h>
+#include <Templates/SubclassOf.h>
 
 #include "ActorPoolSettings.generated.h"
 
@@ -47,6 +47,12 @@ struct FActorPoolInfos
 
     UPROPERTY( EditAnywhere )
     FAPPooledActorAcquireFromPoolSettings AcquireFromPoolSettings;
+
+    UPROPERTY( EditAnywhere )
+    uint8 bSpawnOnServer : 1;
+
+    UPROPERTY( EditAnywhere )
+    uint8 bSpawnOnClients : 1;
 };
 
 UCLASS( config = Game, defaultconfig, meta = ( DisplayName = "ActorPool" ) )
