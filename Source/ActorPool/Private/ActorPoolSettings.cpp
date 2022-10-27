@@ -1,15 +1,17 @@
 #include "ActorPoolSettings.h"
 
-FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings():
+FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings() :
     bShowActor( true ),
     bEnableCollision( true ),
     bDisableNetDormancy( true ),
     NetDormancy( ENetDormancy::DORM_Awake )
 {}
 
-FActorPoolInfos::FActorPoolInfos():
+FActorPoolInfos::FActorPoolInfos() :
     Count( 0 ),
-    bAllowNewInstancesWhenPoolIsEmpty( true )
+    bAllowNewInstancesWhenPoolIsEmpty( true ),
+    bSpawnOnServer( true ),
+    bSpawnOnClients( false )
 {}
 
 FName UActorPoolSettings::GetCategoryName() const
