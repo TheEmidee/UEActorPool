@@ -9,7 +9,7 @@ FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings() :
 
 FActorPoolInfos::FActorPoolInfos() :
     Count( 0 ),
-    PoolingPolicy( EAPPoolingPolicy::None ),
+    PoolingPolicy( EAPPoolingPolicy::CreateNewInstances ),
     bSpawnOnServer( true ),
     bSpawnOnClients( false )
 {}
