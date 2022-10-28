@@ -2,6 +2,8 @@
 
 #include "APPooledActorInterface.h"
 #include "ActorPoolSubSystem.h"
+#include "Engine/Engine.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 #include <Engine/World.h>
 
@@ -182,7 +184,6 @@ AActor * FActorPoolInstances::SpawnActorAndAddToInstances( UWorld * world )
 AActorPoolActor::AActorPoolActor()
 {
     PrimaryActorTick.bCanEverTick = false;
-    bReplicates = true;
 }
 
 void AActorPoolActor::BeginPlay()
@@ -199,9 +200,20 @@ void AActorPoolActor::BeginPlay()
 
     if ( auto * settings = GetDefault< UActorPoolSettings >() )
     {
+        const auto * world = GetWorld();
+        const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+        auto is_server = IsRunningDedicatedServer();
+
+#if WITH_EDITOR
+        checkSlow( game_instance->GetWorldContext() );
+        is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
+#endif
+
+        const auto is_client = !is_server;
+
         for ( const auto & pool_infos : settings->PoolInfos )
         {
-            if ( HasAuthority() && pool_infos.bSpawnOnServer || !HasAuthority() && pool_infos.bSpawnOnClients )
+            if ( is_standalone || is_server && pool_infos.bSpawnOnServer || is_client && pool_infos.bSpawnOnClients )
             {
                 ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
             }
