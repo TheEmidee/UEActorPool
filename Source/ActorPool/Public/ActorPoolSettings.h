@@ -9,6 +9,14 @@
 
 class AActor;
 
+UENUM()
+enum class EAPPoolingPolicy : uint8
+{
+    None,
+    CreateNewInstances,
+    LoopInstances
+};
+
 USTRUCT()
 struct FAPPooledActorAcquireFromPoolSettings
 {
@@ -43,7 +51,7 @@ struct FActorPoolInfos
     int Count;
 
     UPROPERTY( EditAnywhere )
-    uint8 bAllowNewInstancesWhenPoolIsEmpty : 1;
+    EAPPoolingPolicy PoolingPolicy;
 
     UPROPERTY( EditAnywhere )
     FAPPooledActorAcquireFromPoolSettings AcquireFromPoolSettings;
@@ -53,9 +61,6 @@ struct FActorPoolInfos
 
     UPROPERTY( EditAnywhere )
     uint8 bSpawnOnClients : 1;
-
-    UPROPERTY( EditAnywhere )
-    uint8 bLoopingPool : 1;
 };
 
 UCLASS( config = Game, defaultconfig, meta = ( DisplayName = "ActorPool" ) )

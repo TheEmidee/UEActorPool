@@ -9,10 +9,9 @@ FAPPooledActorAcquireFromPoolSettings::FAPPooledActorAcquireFromPoolSettings() :
 
 FActorPoolInfos::FActorPoolInfos() :
     Count( 0 ),
-    bAllowNewInstancesWhenPoolIsEmpty( true ),
+    PoolingPolicy( EAPPoolingPolicy::None ),
     bSpawnOnServer( true ),
-    bSpawnOnClients( false ),
-    bLoopingPool( false )
+    bSpawnOnClients( false )
 {}
 
 FName UActorPoolSettings::GetCategoryName() const

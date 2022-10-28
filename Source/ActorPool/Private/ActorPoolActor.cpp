@@ -45,7 +45,7 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
-        const auto can_create_instance = PoolInfos.bAllowNewInstancesWhenPoolIsEmpty
+        const auto can_create_instance = PoolInfos.PoolingPolicy == EAPPoolingPolicy::CreateNewInstances
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
                                          || GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread()
 #endif
@@ -55,7 +55,7 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
         {
             SpawnActorAndAddToInstances( world );
         }
-        else if ( PoolInfos.bLoopingPool )
+        else if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances )
         {
             AvailableInstanceIndex = 0;
         }
@@ -103,7 +103,7 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
 
     check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
 
-    if ( PoolInfos.bLoopingPool && AvailableInstanceIndex == 0 )
+    if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances && AvailableInstanceIndex == 0 )
     {
         AvailableInstanceIndex = Instances.Num();
     }
