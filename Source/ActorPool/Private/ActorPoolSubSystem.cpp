@@ -40,7 +40,7 @@ bool UActorPoolSubSystem::IsActorPoolable( AActor * actor ) const
 
 bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > actor_class ) const
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return false;
     }
@@ -50,7 +50,7 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
 
 AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return nullptr;
     }
@@ -71,7 +71,7 @@ AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< 
 
 bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( ActorPoolActor == nullptr )
     {
         return false;
     }
@@ -81,18 +81,37 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
 
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )
 {
-    ActorPoolActor = actor_pool_actor;
-
-    if ( ensureAlwaysMsgf( ActorPoolActor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
+    if ( !ensureAlwaysMsgf( actor_pool_actor != nullptr, TEXT( "Actor Pool Actor is not valid!" ) ) )
     {
-        OnActorPoolReadyEvent.Broadcast();
+        return;
+    }
+
+    if ( !ensureAlwaysMsgf( ActorPoolActor == nullptr, TEXT( "The ActorPoolActor is already set!" ) ) )
+    {
+        return;
+    }
+
+    ActorPoolActor = actor_pool_actor;
+    OnActorPoolReadyEvent.Broadcast();
+}
+
+void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate )
+{
+    if ( !OnActorPoolReadyEvent.IsBoundToObject( delegate.GetUObject() ) )
+    {
+        OnActorPoolReadyEvent.Add( delegate );
+    }
+
+    if ( IsActorPoolReady() )
+    {
+        delegate.Execute();
     }
 }
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return;
     }
@@ -102,7 +121,7 @@ void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 
 void UActorPoolSubSystem::DumpPoolInfos( FOutputDevice & output_device ) const
 {
-    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), TEXT( __FUNCTION__ ) ) )
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         return;
     }
