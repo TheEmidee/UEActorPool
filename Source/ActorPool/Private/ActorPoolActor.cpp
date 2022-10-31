@@ -1,6 +1,7 @@
 ﻿#include "ActorPoolActor.h"
 
 #include "APPooledActorInterface.h"
+#include "ActorPoolLog.h"
 #include "ActorPoolSubSystem.h"
 
 #include <Engine/World.h>
@@ -39,6 +40,8 @@ FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos 
     }
 
     AvailableInstanceIndex = 0;
+
+    UE_LOG( LogActorPool, Verbose, TEXT( "Created %i instances for %s" ), pool_infos.Count, *PoolInfos.ActorClass.LoadSynchronous()->GetName() );
 }
 
 AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
@@ -74,6 +77,8 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 
     AvailableInstanceIndex++;
 
+    UE_LOG( LogActorPool, Verbose, TEXT( "GetAvailableInstance : %s - AvailableInstanceIndex : %i" ), *GetNameSafe( result ), AvailableInstanceIndex );
+
     return result;
 }
 
@@ -102,6 +107,8 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
     }
 
     AvailableInstanceIndex--;
+
+    UE_LOG( LogActorPool, Verbose, TEXT( "ReturnActor : %s - AvailableInstanceIndex : %i" ), *GetNameSafe( actor ), AvailableInstanceIndex );
 
     return true;
 }
@@ -180,7 +187,7 @@ void AActorPoolActor::BeginPlay()
         return;
     }
 
-    //Initialize the pools
+    // Initialize the pools
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     if ( GActorPoolDisable.GetValueOnGameThread() == 1 )
     {
