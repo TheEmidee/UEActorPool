@@ -2,10 +2,10 @@
 
 #include "APPooledActorInterface.h"
 #include "ActorPoolSubSystem.h"
-#include "Engine/Engine.h"
-#include "Kismet/KismetSystemLibrary.h"
 
+#include <Engine/Engine.h>
 #include <Engine/World.h>
+#include <Kismet/KismetSystemLibrary.h>
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
@@ -47,23 +47,30 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
-        const auto can_create_instance = PoolInfos.PoolingPolicy == EAPPoolingPolicy::CreateNewInstances
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
-                                         || GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread()
+        if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() )
+        {
+            PoolInfos.PoolingPolicy = EAPPoolingPolicy::CreateNewInstances;
+        }
 #endif
-            ;
 
-        if ( can_create_instance )
+        switch ( PoolInfos.PoolingPolicy )
         {
-            SpawnActorAndAddToInstances( world );
-        }
-        else if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances )
-        {
-            AvailableInstanceIndex = 0;
-        }
-        else
-        {
-            return nullptr;
+            case EAPPoolingPolicy::CreateNewInstances:
+            {
+                SpawnActorAndAddToInstances( world );
+            }
+            break;
+            case EAPPoolingPolicy::LoopInstances:
+            {
+                AvailableInstanceIndex = 0;
+            }
+            break;
+            default:
+            {
+                checkNoEntry();
+            }
+            break;
         }
     }
 

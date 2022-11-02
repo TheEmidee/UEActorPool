@@ -12,7 +12,6 @@ class AActor;
 UENUM()
 enum class EAPPoolingPolicy : uint8
 {
-    None,
     CreateNewInstances,
     LoopInstances
 };
