@@ -4,12 +4,14 @@
 #include "ActorPoolLog.h"
 #include "ActorPoolSubSystem.h"
 
+#include <Engine/Engine.h>
 #include <Engine/World.h>
+#include <Kismet/KismetSystemLibrary.h>
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
     TEXT( "ActorPool.ForceInstanceCreationWhenPoolIsEmpty" ),
-    1,
+    0,
     TEXT( "When on, will force to create actor instances when the pool is empty.\n" )
         TEXT( "0: Disable, 1: Enable" ),
     ECVF_Default );
@@ -48,15 +50,30 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
-        const auto can_create_instance = PoolInfos.bAllowNewInstancesWhenPoolIsEmpty
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
-                                         || GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread()
-#endif
-            ;
-
-        if ( can_create_instance )
+        if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() )
         {
-            SpawnActorAndAddToInstances( world );
+            PoolInfos.PoolingPolicy = EAPPoolingPolicy::CreateNewInstances;
+        }
+#endif
+
+        switch ( PoolInfos.PoolingPolicy )
+        {
+            case EAPPoolingPolicy::CreateNewInstances:
+            {
+                SpawnActorAndAddToInstances( world );
+            }
+            break;
+            case EAPPoolingPolicy::LoopInstances:
+            {
+                AvailableInstanceIndex = 0;
+            }
+            break;
+            default:
+            {
+                checkNoEntry();
+            }
+            break;
         }
     }
 
@@ -100,13 +117,18 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
 
     check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
 
-    if ( Instances.Num() > 1 )
+    if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances && AvailableInstanceIndex == 0 )
     {
-        Instances.RemoveAt( index, 1, false );
-        Instances.Insert( actor, AvailableInstanceIndex - 1 );
+        AvailableInstanceIndex = Instances.Num();
     }
 
     AvailableInstanceIndex--;
+
+    if ( Instances.Num() > 1 )
+    {
+        Instances.RemoveAt( index, 1, false );
+        Instances.Insert( actor, AvailableInstanceIndex );
+    }
 
     UE_LOG( LogActorPool, Verbose, TEXT( "ReturnActor : %s - AvailableInstanceIndex : %i" ), *GetNameSafe( actor ), AvailableInstanceIndex );
 
@@ -182,11 +204,6 @@ void AActorPoolActor::BeginPlay()
 {
     Super::BeginPlay();
 
-    if ( !HasAuthority() )
-    {
-        return;
-    }
-
     // Initialize the pools
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     if ( GActorPoolDisable.GetValueOnGameThread() == 1 )
@@ -197,9 +214,23 @@ void AActorPoolActor::BeginPlay()
 
     if ( auto * settings = GetDefault< UActorPoolSettings >() )
     {
+        const auto * world = GetWorld();
+        const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+        auto is_server = IsRunningDedicatedServer();
+
+#if WITH_EDITOR
+        checkSlow( game_instance->GetWorldContext() );
+        is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
+#endif
+
+        const auto is_client = !is_server;
+
         for ( const auto & pool_infos : settings->PoolInfos )
         {
-            ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+            if ( is_standalone || is_server && pool_infos.bSpawnOnServer || is_client && pool_infos.bSpawnOnClients )
+            {
+                ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+            }
         }
     }
 

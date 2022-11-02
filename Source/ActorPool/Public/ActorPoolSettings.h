@@ -2,12 +2,19 @@
 
 #include <CoreMinimal.h>
 #include <Engine/DeveloperSettings.h>
-#include <Templates/SubclassOf.h>
 #include <Engine/EngineTypes.h>
+#include <Templates/SubclassOf.h>
 
 #include "ActorPoolSettings.generated.h"
 
 class AActor;
+
+UENUM()
+enum class EAPPoolingPolicy : uint8
+{
+    CreateNewInstances,
+    LoopInstances
+};
 
 USTRUCT()
 struct FAPPooledActorAcquireFromPoolSettings
@@ -43,10 +50,16 @@ struct FActorPoolInfos
     int Count;
 
     UPROPERTY( EditAnywhere )
-    uint8 bAllowNewInstancesWhenPoolIsEmpty : 1;
+    EAPPoolingPolicy PoolingPolicy;
 
     UPROPERTY( EditAnywhere )
     FAPPooledActorAcquireFromPoolSettings AcquireFromPoolSettings;
+
+    UPROPERTY( EditAnywhere )
+    uint8 bSpawnOnServer : 1;
+
+    UPROPERTY( EditAnywhere )
+    uint8 bSpawnOnClients : 1;
 };
 
 UCLASS( config = Game, defaultconfig, meta = ( DisplayName = "ActorPool" ) )
