@@ -269,12 +269,28 @@ bool AActorPoolActor::IsActorClassPoolable( TSubclassOf< AActor > actor_class ) 
 
 AActor * AActorPoolActor::GetActorFromPool( TSubclassOf< AActor > actor_class )
 {
-    if ( auto * actor_instances = ActorPools.Find( actor_class ) )
+    auto * actor_instances = ActorPools.Find( actor_class );
+
+    if ( actor_instances == nullptr)
     {
-        return actor_instances->GetAvailableInstance( GetWorld() );
+#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+        if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() == 1 )
+        {
+            FActorPoolInfos pool_infos;
+            pool_infos.ActorClass = actor_class;
+            pool_infos.Count = 1;
+            pool_infos.PoolingPolicy = EAPPoolingPolicy::CreateNewInstances;
+
+            actor_instances = &ActorPools.Add( actor_class, FActorPoolInstances( GetWorld(), pool_infos ) );
+        }
+        else
+#endif
+        {
+            return nullptr;
+        }
     }
 
-    return nullptr;
+    return actor_instances->GetAvailableInstance( GetWorld() );
 }
 
 bool AActorPoolActor::ReturnActorToPool( AActor * actor )
