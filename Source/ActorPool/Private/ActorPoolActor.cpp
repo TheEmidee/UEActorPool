@@ -206,30 +206,28 @@ void AActorPoolActor::BeginPlay()
 
     // Initialize the pools
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
-    if ( GActorPoolDisable.GetValueOnGameThread() == 1 )
-    {
-        return;
-    }
+    if ( GActorPoolDisable.GetValueOnGameThread() == 0 )
 #endif
-
-    if ( auto * settings = GetDefault< UActorPoolSettings >() )
     {
-        const auto * world = GetWorld();
-        const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
-        auto is_server = IsRunningDedicatedServer();
+        if ( auto * settings = GetDefault< UActorPoolSettings >() )
+        {
+            const auto * world = GetWorld();
+            const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+            auto is_server = IsRunningDedicatedServer();
 
 #if WITH_EDITOR
-        checkSlow( game_instance->GetWorldContext() );
-        is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
+            checkSlow( game_instance->GetWorldContext() );
+            is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
 #endif
 
-        const auto is_client = !is_server;
+            const auto is_client = !is_server;
 
-        for ( const auto & pool_infos : settings->PoolInfos )
-        {
-            if ( is_standalone || is_server && pool_infos.bSpawnOnServer || is_client && pool_infos.bSpawnOnClients )
+            for ( const auto & pool_infos : settings->PoolInfos )
             {
-                ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+                if ( is_standalone || is_server && pool_infos.bSpawnOnServer || is_client && pool_infos.bSpawnOnClients )
+                {
+                    ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
+                }
             }
         }
     }
