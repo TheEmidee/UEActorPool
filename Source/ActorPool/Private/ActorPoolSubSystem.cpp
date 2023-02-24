@@ -1,5 +1,6 @@
 #include "ActorPoolSubSystem.h"
 
+#include "APPooledActorInterface.h"
 #include "ActorPoolActor.h"
 
 #include <Engine/World.h>
@@ -48,25 +49,37 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return ActorPoolActor->IsActorClassPoolable( actor_class );
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPool( const TSubclassOf< AActor > actor_class )
+FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+{
+    return GetActorFromPoolWithTransform( actor_class, FTransform(), on_actor_got_from_pool );
+}
+
+FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
-        return nullptr;
+        on_actor_got_from_pool.ExecuteIfBound( nullptr );
+        return FActorPoolRequestHandle();
     }
 
-    return ActorPoolActor->GetActorFromPool( actor_class );
-}
+    auto * actor = ActorPoolActor->GetActorFromPool( actor_class );
 
-AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform transform )
-{
-    if ( auto * result = GetActorFromPool( actor_class ) )
+    if ( actor != nullptr )
     {
-        result->SetActorTransform( transform, false, nullptr, ETeleportType::ResetPhysics );
-        return result;
+        if ( Cast< IAPPooledActorInterface >( actor ) )
+        {
+            if ( IAPPooledActorInterface::Execute_IsUsingDeferredAcquisitionFromPool( actor ) )
+            {
+                const auto & request = PendingActorRequests.Emplace_GetRef( on_actor_got_from_pool, actor, transform );
+                IAPPooledActorInterface::Execute_OnAquiredFromPoolDeferred( actor, request.Handle );
+                return request.Handle;
+            }
+        }
     }
 
-    return nullptr;
+    actor->SetActorTransform( transform );
+    on_actor_got_from_pool.ExecuteIfBound( actor );
+    return FActorPoolRequestHandle();
 }
 
 bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
@@ -77,6 +90,28 @@ bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
     }
 
     return ActorPoolActor->ReturnActorToPool( actor );
+}
+
+bool UActorPoolSubSystem::FinishAcquireActor( FActorPoolRequestHandle handle )
+{
+    if ( !handle.IsValid() )
+    {
+        return false;
+    }
+
+    for ( auto index = 0; index < PendingActorRequests.Num(); ++index )
+    {
+        const auto & request = PendingActorRequests[ index ];
+        if ( request.Handle == handle )
+        {
+            request.Actor->SetActorTransform( request.Transform );
+            request.Callback.ExecuteIfBound( request.Actor.Get() );
+            PendingActorRequests.RemoveAt( index );
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_actor )

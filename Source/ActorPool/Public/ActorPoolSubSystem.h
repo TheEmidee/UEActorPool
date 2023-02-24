@@ -1,13 +1,14 @@
 #pragma once
 
+#include "ActorPoolActor.h"
+
 #include <CoreMinimal.h>
 #include <Subsystems/WorldSubsystem.h>
 
 #include "ActorPoolSubSystem.generated.h"
 
-class AActorPoolActor;
-
 DECLARE_EVENT( UActorPoolSubSystem, FSWOnActorPoolReadyEvent )
+DECLARE_DYNAMIC_DELEGATE_OneParam( FAPOnActorGotFromPoolDynamicDelegate, AActor *, Actor );
 
 UCLASS()
 class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
@@ -21,26 +22,17 @@ public:
     UFUNCTION( BlueprintPure )
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
-    UFUNCTION( BlueprintCallable, meta = ( DeterminesOutputType = "actor_class" ) )
-    AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
+    UFUNCTION( BlueprintCallable )
+    FActorPoolRequestHandle GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
 
-    template < typename _ACTOR_CLASS_ >
-    _ACTOR_CLASS_ * GetActorFromPool( const TSubclassOf< AActor > actor_class )
-    {
-        return Cast< _ACTOR_CLASS_ >( GetActorFromPool( actor_class ) );
-    }
-
-    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform", meta = ( DeterminesOutputType = "actor_class" ) )
-    AActor * GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform );
-
-    template < typename _ACTOR_CLASS_ >
-    _ACTOR_CLASS_ * GetActorFromPoolWithTransform( const TSubclassOf< AActor > actor_class, const FTransform & transform )
-    {
-        return Cast< _ACTOR_CLASS_ >( GetActorFromPoolWithTransform( actor_class, transform ) );
-    }
+    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform" )
+    FActorPoolRequestHandle GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
 
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
+
+    UFUNCTION( BlueprintCallable )
+    bool FinishAcquireActor( FActorPoolRequestHandle handle );
 
     void RegisterActorPoolActor( AActorPoolActor * actor_pool_actor );
     bool IsActorPoolReady() const;
@@ -52,10 +44,26 @@ public:
 #endif
 
 private:
+    struct PendingActorRequest
+    {
+        PendingActorRequest( const FAPOnActorGotFromPoolDynamicDelegate & callback, AActor * actor, const FTransform & transform ) :
+            Callback( callback ),
+            Actor( actor ),
+            Transform( transform ),
+            Handle( FActorPoolRequestHandle ::GenerateNewHandle() )
+        {}
+
+        FAPOnActorGotFromPoolDynamicDelegate Callback;
+        TWeakObjectPtr< AActor > Actor;
+        FTransform Transform;
+        FActorPoolRequestHandle Handle;
+    };
+
     UPROPERTY()
     AActorPoolActor * ActorPoolActor;
 
     FSimpleMulticastDelegate OnActorPoolReadyEvent;
+    TArray< PendingActorRequest > PendingActorRequests;
 };
 
 FORCEINLINE bool UActorPoolSubSystem::IsActorPoolReady() const
