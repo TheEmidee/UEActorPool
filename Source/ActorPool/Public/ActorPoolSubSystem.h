@@ -9,6 +9,8 @@
 
 DECLARE_EVENT( UActorPoolSubSystem, FSWOnActorPoolReadyEvent )
 DECLARE_DYNAMIC_DELEGATE_OneParam( FAPOnActorGotFromPoolDynamicDelegate, AActor *, Actor );
+DECLARE_DELEGATE_OneParam( FAPOnActorGotFromPoolDelegate, AActor * Actor );
+
 
 UCLASS()
 class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
@@ -22,11 +24,14 @@ public:
     UFUNCTION( BlueprintPure )
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
-    UFUNCTION( BlueprintCallable )
-    FActorPoolRequestHandle GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
+    FActorPoolRequestHandle GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool );
+    FActorPoolRequestHandle GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool );
+
+    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool" )
+    FActorPoolRequestHandle K2_GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
 
     UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform" )
-    FActorPoolRequestHandle GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
+    FActorPoolRequestHandle K2_GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
 
     // Gets an actor from the pool and returns it immediately.
     // Use this function only when you are sure that the actor you acquire does not have a delayed initialization and does not call FinishAcquireActor
@@ -51,14 +56,14 @@ public:
 private:
     struct PendingActorRequest
     {
-        PendingActorRequest( const FAPOnActorGotFromPoolDynamicDelegate & callback, AActor * actor, const FTransform & transform ) :
+        PendingActorRequest( const FAPOnActorGotFromPoolDelegate & callback, AActor * actor, const FTransform & transform ) :
             Callback( callback ),
             Actor( actor ),
             Transform( transform ),
             Handle( FActorPoolRequestHandle ::GenerateNewHandle() )
         {}
 
-        FAPOnActorGotFromPoolDynamicDelegate Callback;
+        FAPOnActorGotFromPoolDelegate Callback;
         TWeakObjectPtr< AActor > Actor;
         FTransform Transform;
         FActorPoolRequestHandle Handle;

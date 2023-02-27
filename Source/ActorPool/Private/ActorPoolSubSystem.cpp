@@ -49,12 +49,12 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return ActorPoolActor->IsActorClassPoolable( actor_class );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
 {
-    return GetActorFromPoolWithTransform( actor_class, FTransform(), on_actor_got_from_pool );
+    return GetActorFromPoolWithTransform( actor_class, FTransform::Identity, on_actor_got_from_pool );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
@@ -80,7 +80,25 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
     return FActorPoolRequestHandle();
 }
 
-AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclassOf<AActor> actor_class, FTransform transform )
+FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+{
+    const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
+        on_actor_got_from_pool.ExecuteIfBound( actor );
+    } );
+
+    return GetActorFromPool( actor_class, delegate );
+}
+
+FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+{
+    const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
+        on_actor_got_from_pool.ExecuteIfBound( actor );
+    } );
+
+    return GetActorFromPoolWithTransform( actor_class, transform, delegate );
+}
+
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclassOf< AActor > actor_class, FTransform transform )
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
@@ -93,7 +111,7 @@ AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclass
         return actor;
     }
 
-    return nullptr;    
+    return nullptr;
 }
 
 bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )
