@@ -62,9 +62,7 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
         return FActorPoolRequestHandle();
     }
 
-    auto * actor = ActorPoolActor->GetActorFromPool( actor_class );
-
-    if ( actor != nullptr )
+    if ( auto * actor = GetActorFromPoolWithTransformNoDeferred( actor_class, transform ) )
     {
         if ( Cast< IAPPooledActorInterface >( actor ) )
         {
@@ -75,11 +73,27 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
                 return request.Handle;
             }
         }
+
+        on_actor_got_from_pool.ExecuteIfBound( actor );
     }
 
-    actor->SetActorTransform( transform );
-    on_actor_got_from_pool.ExecuteIfBound( actor );
     return FActorPoolRequestHandle();
+}
+
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclassOf<AActor> actor_class, FTransform transform )
+{
+    if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
+    {
+        return nullptr;
+    }
+
+    if ( auto * actor = ActorPoolActor->GetActorFromPool( actor_class ) )
+    {
+        actor->SetActorTransform( transform );
+        return actor;
+    }
+
+    return nullptr;    
 }
 
 bool UActorPoolSubSystem::ReturnActorToPool( AActor * actor )

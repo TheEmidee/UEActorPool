@@ -28,6 +28,11 @@ public:
     UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform" )
     FActorPoolRequestHandle GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool );
 
+    // Gets an actor from the pool and returns it immediately.
+    // Use this function only when you are sure that the actor you acquire does not have a delayed initialization and does not call FinishAcquireActor
+    UFUNCTION( BlueprintCallable, DisplayName = "GetActorFromPool - WithTransform - NoDeferred", meta = ( DeterminesOutputType = "actor_class" ) )
+    AActor * GetActorFromPoolWithTransformNoDeferred( TSubclassOf< AActor > actor_class, FTransform transform );
+
     UFUNCTION( BlueprintCallable )
     bool ReturnActorToPool( AActor * actor );
 
