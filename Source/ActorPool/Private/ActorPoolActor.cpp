@@ -25,12 +25,12 @@ static TAutoConsoleVariable< int32 > GActorPoolDisable(
 #endif
 
 FActorPoolInstances::FActorPoolInstances() :
-    AvailableInstanceIndex( INDEX_NONE )
+    AvailableInstanceIndex( 0 )
 {
 }
 
 FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos ) :
-    AvailableInstanceIndex( INDEX_NONE ),
+    AvailableInstanceIndex( 0 ),
     PoolInfos( pool_infos )
 {
     Instances.Reserve( pool_infos.Count );
@@ -40,8 +40,6 @@ FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos 
         auto * actor = SpawnActorAndAddToInstances( world );
         DisableActor( actor );
     }
-
-    AvailableInstanceIndex = 0;
 
     UE_LOG( LogActorPool, Verbose, TEXT( "Created %i instances for %s" ), pool_infos.Count, *PoolInfos.ActorClass.LoadSynchronous()->GetName() );
 }
@@ -113,9 +111,15 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
         return false;
     }
 
+    // We can't let AvailableInstanceIndex go below 0. If we're already at 0 this probably means we're returning an actor that has already been returned already
+    if ( AvailableInstanceIndex == 0 )
+    {
+        return false;
+    }
+
     DisableActor( actor );
 
-    check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
+    check( AvailableInstanceIndex > 0 && AvailableInstanceIndex <= Instances.Num() );
 
     if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances && AvailableInstanceIndex == 0 )
     {
