@@ -7,7 +7,65 @@
 
 #include "ActorPoolActor.generated.h"
 
+DECLARE_DELEGATE_OneParam( FAPOnActorGotFromPoolDelegate, AActor * Actor );
+
 struct FActorPoolInfos;
+
+USTRUCT( BlueprintType )
+struct ACTORPOOL_API FActorPoolRequestHandle
+{
+    GENERATED_USTRUCT_BODY()
+
+    FActorPoolRequestHandle() :
+        Handle( INDEX_NONE )
+    {
+    }
+
+    explicit FActorPoolRequestHandle( int32 handle ) :
+        Handle( handle )
+    {
+    }
+
+    bool IsValid() const
+    {
+        return Handle != INDEX_NONE;
+    }
+
+    bool operator==( const FActorPoolRequestHandle & Other ) const
+    {
+        return Handle == Other.Handle;
+    }
+
+    bool operator!=( const FActorPoolRequestHandle & Other ) const
+    {
+        return Handle != Other.Handle;
+    }
+
+    friend uint32 GetTypeHash( const FActorPoolRequestHandle & InHandle )
+    {
+        return InHandle.Handle;
+    }
+
+    FString ToString() const
+    {
+        return FString::Printf( TEXT( "%d" ), Handle );
+    }
+
+    void Invalidate()
+    {
+        Handle = INDEX_NONE;
+    }
+
+    static FActorPoolRequestHandle GenerateNewHandle()
+    {
+        static int GHandle = 0;
+
+        return FActorPoolRequestHandle( GHandle++ );
+    }
+
+private:
+    int32 Handle;
+};
 
 USTRUCT()
 struct FActorPoolInstances
@@ -38,7 +96,7 @@ private:
     FActorPoolInfos PoolInfos;
 };
 
-UCLASS()
+UCLASS( NotPlaceable, NotBlueprintType, NotBlueprintable )
 class ACTORPOOL_API AActorPoolActor : public AActor
 {
     GENERATED_BODY()
@@ -52,6 +110,7 @@ public:
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
+    void FinishAcquireActor( FActorPoolRequestHandle handle );
 
     bool ReturnActorToPool( AActor * actor );
 

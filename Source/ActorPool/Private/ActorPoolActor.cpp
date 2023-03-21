@@ -271,7 +271,7 @@ AActor * AActorPoolActor::GetActorFromPool( TSubclassOf< AActor > actor_class )
 {
     auto * actor_instances = ActorPools.Find( actor_class );
 
-    if ( actor_instances == nullptr)
+    if ( actor_instances == nullptr )
     {
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
         if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() == 1 )
