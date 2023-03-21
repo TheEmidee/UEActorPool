@@ -111,9 +111,15 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
         return false;
     }
 
+    // We can't let AvailableInstanceIndex go below 0. If we're already at 0 this probably means we're returning an actor that has already been returned already
+    if ( AvailableInstanceIndex == 0 )
+    {
+        return false;
+    }
+
     DisableActor( actor );
 
-    check( AvailableInstanceIndex >= 0 && AvailableInstanceIndex <= Instances.Num() );
+    check( AvailableInstanceIndex > 0 && AvailableInstanceIndex <= Instances.Num() );
 
     if ( PoolInfos.PoolingPolicy == EAPPoolingPolicy::LoopInstances && AvailableInstanceIndex == 0 )
     {
