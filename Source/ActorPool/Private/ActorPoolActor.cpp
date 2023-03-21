@@ -25,12 +25,12 @@ static TAutoConsoleVariable< int32 > GActorPoolDisable(
 #endif
 
 FActorPoolInstances::FActorPoolInstances() :
-    AvailableInstanceIndex( INDEX_NONE )
+    AvailableInstanceIndex( 0 )
 {
 }
 
 FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos & pool_infos ) :
-    AvailableInstanceIndex( INDEX_NONE ),
+    AvailableInstanceIndex( 0 ),
     PoolInfos( pool_infos )
 {
     Instances.Reserve( pool_infos.Count );
@@ -40,8 +40,6 @@ FActorPoolInstances::FActorPoolInstances( UWorld * world, const FActorPoolInfos 
         auto * actor = SpawnActorAndAddToInstances( world );
         DisableActor( actor );
     }
-
-    AvailableInstanceIndex = 0;
 
     UE_LOG( LogActorPool, Verbose, TEXT( "Created %i instances for %s" ), pool_infos.Count, *PoolInfos.ActorClass.LoadSynchronous()->GetName() );
 }
