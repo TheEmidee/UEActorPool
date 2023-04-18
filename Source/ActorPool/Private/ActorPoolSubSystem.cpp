@@ -159,20 +159,31 @@ void UActorPoolSubSystem::RegisterActorPoolActor( AActorPoolActor * actor_pool_a
     }
 
     ActorPoolActor = actor_pool_actor;
-    OnActorPoolReadyEvent.Broadcast();
+    BroadcastOnActorPoolReadyEvent();
 }
 
-void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate )
+void UActorPoolSubSystem::OnActorPoolReady_RegisterAndCall( FAPOnActorPoolReadyEvent delegate )
 {
-    if ( !OnActorPoolReadyEvent.IsBoundToObject( delegate.GetUObject() ) )
-    {
-        OnActorPoolReadyEvent.Add( delegate );
-    }
-
     if ( IsActorPoolReady() )
     {
-        delegate.Execute();
+        delegate.ExecuteIfBound( ActorPoolActor );
     }
+    else
+    {
+        OnActorPoolReadyEvents.Emplace( MoveTemp( delegate ) );
+    }
+}
+
+void UActorPoolSubSystem::RegisterPooledActor( const FActorPoolInfos & actor_pool_infos )
+{
+    ensureAlways( ActorPoolActor != nullptr );
+    ActorPoolActor->RegisterPooledActor( actor_pool_infos );
+}
+
+void UActorPoolSubSystem::UnRegisterPooledActor( const FActorPoolInfos & actor_pool_infos )
+{
+    ensureAlways( ActorPoolActor != nullptr );
+    ActorPoolActor->UnRegisterPooledActor( actor_pool_infos );
 }
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
@@ -196,3 +207,11 @@ void UActorPoolSubSystem::DumpPoolInfos( FOutputDevice & output_device ) const
     ActorPoolActor->DumpPoolInfos( output_device );
 }
 #endif
+
+void UActorPoolSubSystem::BroadcastOnActorPoolReadyEvent()
+{
+    for ( const auto & event : OnActorPoolReadyEvents )
+    {
+        event.ExecuteIfBound( ActorPoolActor );
+    }
+}

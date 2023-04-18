@@ -215,23 +215,9 @@ void AActorPoolActor::BeginPlay()
     {
         if ( auto * settings = GetDefault< UActorPoolSettings >() )
         {
-            const auto * world = GetWorld();
-            const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
-            auto is_server = IsRunningDedicatedServer();
-
-#if WITH_EDITOR
-            checkSlow( game_instance->GetWorldContext() );
-            is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
-#endif
-
-            const auto is_client = !is_server;
-
             for ( const auto & pool_infos : settings->PoolInfos )
             {
-                if ( is_standalone || is_server && pool_infos.bSpawnOnServer || is_client && pool_infos.bSpawnOnClients )
-                {
-                    ActorPools.Emplace( pool_infos.ActorClass.LoadSynchronous(), CreateActorPoolInstance( pool_infos ) );
-                }
+                RegisterPooledActor( pool_infos );
             }
         }
     }
@@ -269,6 +255,70 @@ bool AActorPoolActor::IsActorClassPoolable( TSubclassOf< AActor > actor_class ) 
     }
 
     return false;
+}
+
+void AActorPoolActor::RegisterPooledActor( const FActorPoolInfos & actor_pool_infos )
+{
+    if ( !ensureAlways( actor_pool_infos.ActorClass != nullptr ) )
+    {
+        return;
+    }
+
+    auto * actor_class = actor_pool_infos.ActorClass.LoadSynchronous();
+
+    if ( !ensureAlways( ActorPools.Find( actor_class ) == nullptr ) )
+    {
+        return;
+    }
+
+    const auto * world = GetWorld();
+    const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+    auto is_server = IsRunningDedicatedServer();
+
+#if WITH_EDITOR
+    checkSlow( game_instance->GetWorldContext() );
+    is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
+#endif
+
+    const auto is_client = !is_server;
+
+    if ( is_standalone || is_server && actor_pool_infos.bSpawnOnServer || is_client && actor_pool_infos.bSpawnOnClients )
+    {
+        ActorPools.Emplace( actor_class, CreateActorPoolInstance( actor_pool_infos ) );
+    }
+}
+
+void AActorPoolActor::UnRegisterPooledActor( const FActorPoolInfos & actor_pool_infos )
+{
+    if ( actor_pool_infos.ActorClass == nullptr )
+    {
+        return;
+    }
+
+    auto * actor_class = actor_pool_infos.ActorClass.LoadSynchronous();
+    auto * existing_actor_pool = ActorPools.Find( actor_class );
+
+    if ( existing_actor_pool == nullptr )
+    {
+        return;
+    }
+
+    const auto * world = GetWorld();
+    const auto is_standalone = UKismetSystemLibrary::IsStandalone( world );
+    auto is_server = IsRunningDedicatedServer();
+
+#if WITH_EDITOR
+    checkSlow( game_instance->GetWorldContext() );
+    is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
+#endif
+
+    const auto is_client = !is_server;
+
+    if ( is_standalone || is_server && actor_pool_infos.bSpawnOnServer || is_client && actor_pool_infos.bSpawnOnClients )
+    {
+        existing_actor_pool->DestroyActors();
+        ActorPools.Remove( actor_class );
+    }
 }
 
 AActor * AActorPoolActor::GetActorFromPool( TSubclassOf< AActor > actor_class )
