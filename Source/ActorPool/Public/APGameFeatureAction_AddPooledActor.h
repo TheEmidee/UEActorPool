@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ActorPoolSettings.h"
+
 #include <CoreMinimal.h>
 #include <GameFeatureAction.h>
 #include <GameFeaturesSubsystem.h>
