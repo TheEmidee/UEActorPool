@@ -7,10 +7,9 @@
 
 #include "ActorPoolSubSystem.generated.h"
 
-DECLARE_EVENT( UActorPoolSubSystem, FSWOnActorPoolReadyEvent )
+DECLARE_DELEGATE_OneParam( FAPOnActorPoolReadyEvent, AActorPoolActor * actor_pool_actor );
 DECLARE_DYNAMIC_DELEGATE_OneParam( FAPOnActorGotFromPoolDynamicDelegate, AActor *, Actor );
 DECLARE_DELEGATE_OneParam( FAPOnActorGotFromPoolDelegate, AActor * Actor );
-
 
 UCLASS()
 class ACTORPOOL_API UActorPoolSubSystem final : public UWorldSubsystem
@@ -46,7 +45,9 @@ public:
 
     void RegisterActorPoolActor( AActorPoolActor * actor_pool_actor );
     bool IsActorPoolReady() const;
-    void OnActorPoolReady_RegisterAndCall( FSimpleMulticastDelegate::FDelegate delegate );
+    void OnActorPoolReady_RegisterAndCall( FAPOnActorPoolReadyEvent delegate );
+    void RegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
+    void UnRegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
     void DestroyUnusedInstancesInPools();
@@ -69,10 +70,12 @@ private:
         FActorPoolRequestHandle Handle;
     };
 
+    void BroadcastOnActorPoolReadyEvent();
+
     UPROPERTY()
     AActorPoolActor * ActorPoolActor;
 
-    FSimpleMulticastDelegate OnActorPoolReadyEvent;
+    TArray< FAPOnActorPoolReadyEvent > OnActorPoolReadyEvents;
     TArray< PendingActorRequest > PendingActorRequests;
 };
 

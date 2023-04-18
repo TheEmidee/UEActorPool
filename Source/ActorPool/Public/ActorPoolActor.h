@@ -109,6 +109,9 @@ public:
 
     bool IsActorClassPoolable( TSubclassOf< AActor > actor_class ) const;
 
+    void RegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
+    void UnRegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
+
     AActor * GetActorFromPool( TSubclassOf< AActor > actor_class );
     void FinishAcquireActor( FActorPoolRequestHandle handle );
 

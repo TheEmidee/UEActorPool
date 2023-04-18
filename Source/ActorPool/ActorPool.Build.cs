@@ -18,7 +18,8 @@ namespace UnrealBuildTool.Rules
                     "Core",
                     "CoreUObject",
                     "Engine",
-                    "DeveloperSettings"
+                    "DeveloperSettings",
+                    "GameFeatures"
                 }
             );
         }

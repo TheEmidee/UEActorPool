@@ -18,5 +18,10 @@
       "LoadingPhase": "PreDefault"
     }
   ],
-  "Plugins": []
+  "Plugins": [
+    {
+      "Name": "GameFeatures",
+      "Enabled" : true
+    }
+  ]
 }
