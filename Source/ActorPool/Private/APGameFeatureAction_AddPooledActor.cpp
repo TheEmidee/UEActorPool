@@ -36,7 +36,7 @@ void UAPGameFeatureAction_AddPooledActor::OnGameFeatureDeactivating( FGameFeatur
 
 void UAPGameFeatureAction_AddPooledActor::HandleGameInstanceStart( UGameInstance * game_instance, FGameFeatureStateChangeContext change_context )
 {
-    if ( const FWorldContext * world_context = game_instance->GetWorldContext() )
+    if ( const auto * world_context = game_instance->GetWorldContext() )
     {
         if ( change_context.ShouldApplyToWorldContext( *world_context ) )
         {
