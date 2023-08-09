@@ -107,7 +107,8 @@ AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclass
 
     if ( auto * actor = ActorPoolActor->GetActorFromPool( actor_class ) )
     {
-        actor->SetActorTransform( transform );
+        actor->SetActorLocation( transform.GetLocation() );
+        actor->SetActorRotation( transform.GetRotation() );
         return actor;
     }
 
