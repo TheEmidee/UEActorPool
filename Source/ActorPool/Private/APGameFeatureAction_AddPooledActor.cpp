@@ -2,6 +2,7 @@
 
 #include "ActorPoolSubSystem.h"
 
+#include <Engine/GameInstance.h>
 #include <Kismet/KismetSystemLibrary.h>
 
 void UAPGameFeatureAction_AddPooledActor::OnGameFeatureActivating( FGameFeatureActivatingContext & context )
