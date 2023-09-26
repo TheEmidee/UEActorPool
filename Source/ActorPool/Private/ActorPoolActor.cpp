@@ -8,6 +8,10 @@
 #include <Engine/World.h>
 #include <Kismet/KismetSystemLibrary.h>
 
+#if WITH_EDITOR
+#include <Engine/GameInstance.h>
+#endif
+
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
     TEXT( "ActorPool.ForceInstanceCreationWhenPoolIsEmpty" ),
