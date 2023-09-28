@@ -4,6 +4,7 @@
 #include "ActorPoolActor.h"
 
 #include <Engine/World.h>
+#include <HAL/IConsoleManager.h>
 
 #if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
 static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
