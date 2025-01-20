@@ -286,7 +286,7 @@ void AActorPoolActor::RegisterPooledActor( const FActorPoolInfos & actor_pool_in
 
     const auto is_client = !is_server;
 
-    if ( is_standalone || is_server && actor_pool_infos.bSpawnOnServer || is_client && actor_pool_infos.bSpawnOnClients )
+    if ( is_standalone || ( is_server && actor_pool_infos.bSpawnOnServer ) || ( is_client && actor_pool_infos.bSpawnOnClients ) )
     {
         ActorPools.Emplace( actor_class, CreateActorPoolInstance( actor_pool_infos ) );
     }
@@ -318,7 +318,7 @@ void AActorPoolActor::UnRegisterPooledActor( const FActorPoolInfos & actor_pool_
 
     const auto is_client = !is_server;
 
-    if ( is_standalone || is_server && actor_pool_infos.bSpawnOnServer || is_client && actor_pool_infos.bSpawnOnClients )
+    if ( is_standalone || ( is_server && actor_pool_infos.bSpawnOnServer ) || ( is_client && actor_pool_infos.bSpawnOnClients ) )
     {
         existing_actor_pool->DestroyActors();
         ActorPools.Remove( actor_class );
