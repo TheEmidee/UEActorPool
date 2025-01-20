@@ -65,7 +65,7 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
 
     if ( auto * actor = GetActorFromPoolWithTransformNoDeferred( actor_class, transform ) )
     {
-        if ( Cast< IAPPooledActorInterface >( actor ) )
+        if ( actor->Implements< UAPPooledActorInterface >() )
         {
             if ( IAPPooledActorInterface::Execute_IsUsingDeferredAcquisitionFromPool( actor ) )
             {

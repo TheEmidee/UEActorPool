@@ -89,7 +89,7 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
         result->SetNetDormancy( PoolInfos.AcquireFromPoolSettings.NetDormancy );
     }
 
-    if ( Cast< IAPPooledActorInterface >( result ) )
+    if ( result->Implements< UAPPooledActorInterface >() )
     {
         IAPPooledActorInterface::Execute_OnAcquiredFromPool( result );
     }
@@ -186,7 +186,7 @@ void FActorPoolInstances::DisableActor( AActor * actor ) const
     actor->SetActorEnableCollision( false );
     actor->SetNetDormancy( ENetDormancy::DORM_DormantAll );
 
-    if ( Cast< IAPPooledActorInterface >( actor ) )
+    if ( actor->Implements< UAPPooledActorInterface >() )
     {
         IAPPooledActorInterface::Execute_OnReturnedToPool( actor );
     }
