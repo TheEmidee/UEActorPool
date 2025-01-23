@@ -65,7 +65,9 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
 
     if ( auto * actor = GetActorFromPoolWithTransformNoDeferred( actor_class, transform ) )
     {
-        if ( Cast< IAPPooledActorInterface >( actor ) )
+        on_actor_got_from_pool.ExecuteIfBound( actor );
+
+        if ( actor->Implements< UAPPooledActorInterface >() )
         {
             if ( IAPPooledActorInterface::Execute_IsUsingDeferredAcquisitionFromPool( actor ) )
             {
@@ -74,8 +76,6 @@ FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSub
                 return request.Handle;
             }
         }
-
-        on_actor_got_from_pool.ExecuteIfBound( actor );
     }
 
     return FActorPoolRequestHandle();
