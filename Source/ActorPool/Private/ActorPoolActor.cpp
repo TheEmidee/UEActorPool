@@ -138,7 +138,7 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
 
     if ( Instances.Num() > 1 )
     {
-        Instances.RemoveAt( index, 1, false );
+        Instances.RemoveAt( index, 1, EAllowShrinking::No );
         Instances.Insert( actor, AvailableInstanceIndex );
     }
     
