@@ -115,13 +115,17 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
         return false;
     }
 
+    // Ignore if actor has already returned
+    if ( index >= AvailableInstanceIndex )
+    {
+        return false;
+    }
+
     // We can't let AvailableInstanceIndex go below 0. If we're already at 0 this probably means we're returning an actor that has already been returned already
     if ( AvailableInstanceIndex == 0 )
     {
         return false;
     }
-
-    DisableActor( actor );
 
     check( AvailableInstanceIndex > 0 && AvailableInstanceIndex <= Instances.Num() );
 
@@ -137,6 +141,8 @@ bool FActorPoolInstances::ReturnActor( AActor * actor )
         Instances.RemoveAt( index, 1, false );
         Instances.Insert( actor, AvailableInstanceIndex );
     }
+    
+    DisableActor( actor );
 
     UE_LOG( LogActorPool, Verbose, TEXT( "ReturnActor : %s - AvailableInstanceIndex : %i" ), *GetNameSafe( actor ), AvailableInstanceIndex );
 
