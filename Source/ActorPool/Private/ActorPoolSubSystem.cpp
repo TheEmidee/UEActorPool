@@ -50,53 +50,53 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return ActorPoolActor->IsActorClassPoolable( actor_class );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
+void UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool, FActorPoolRequestHandle & request_handle )
 {
-    return GetActorFromPoolWithTransform( actor_class, FTransform::Identity, on_actor_got_from_pool );
+    return GetActorFromPoolWithTransform( actor_class, FTransform::Identity, on_actor_got_from_pool, request_handle );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
+void UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool, FActorPoolRequestHandle & request_handle )
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
         on_actor_got_from_pool.ExecuteIfBound( nullptr );
-        return FActorPoolRequestHandle();
+        request_handle = FActorPoolRequestHandle();
+        return;
     }
 
     if ( auto * actor = GetActorFromPoolWithTransformNoDeferred( actor_class, transform ) )
     {
-        on_actor_got_from_pool.ExecuteIfBound( actor );
-
         if ( actor->Implements< UAPPooledActorInterface >() )
         {
             if ( IAPPooledActorInterface::Execute_IsUsingDeferredAcquisitionFromPool( actor ) )
             {
-                const auto & request = PendingActorRequests.Emplace_GetRef( on_actor_got_from_pool, actor, transform );
-                IAPPooledActorInterface::Execute_OnAquiredFromPoolDeferred( actor, request.Handle );
-                return request.Handle;
+                const auto & request = PendingActorRequests.Emplace_GetRef( actor, transform );
+                request_handle = request.Handle;
             }
         }
+
+        on_actor_got_from_pool.ExecuteIfBound( actor );
+        return;
     }
 
-    return FActorPoolRequestHandle();
+    request_handle = FActorPoolRequestHandle();
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+void UActorPoolSubSystem::K2_GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool, FActorPoolRequestHandle & request_handle )
 {
     const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
         on_actor_got_from_pool.ExecuteIfBound( actor );
     } );
 
-    return GetActorFromPool( actor_class, delegate );
+    return GetActorFromPool( actor_class, delegate, request_handle );
 }
-
-FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+void UActorPoolSubSystem::K2_GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool, FActorPoolRequestHandle & request_handle )
 {
     const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
         on_actor_got_from_pool.ExecuteIfBound( actor );
     } );
 
-    return GetActorFromPoolWithTransform( actor_class, transform, delegate );
+    return GetActorFromPoolWithTransform( actor_class, transform, delegate, request_handle );
 }
 
 AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclassOf< AActor > actor_class, FTransform transform )
@@ -139,7 +139,7 @@ bool UActorPoolSubSystem::FinishAcquireActor( FActorPoolRequestHandle handle )
         if ( request.Handle == handle )
         {
             request.Actor->SetActorTransform( request.Transform );
-            request.Callback.ExecuteIfBound( request.Actor.Get() );
+            IAPPooledActorInterface::Execute_OnAquiredFromPoolDeferred( request.Actor.Get(), request.Handle );
             PendingActorRequests.RemoveAt( index );
             return true;
         }
