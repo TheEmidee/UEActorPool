@@ -47,7 +47,7 @@ public:
     void RegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
     void UnRegisterPooledActor( const FActorPoolInfos & actor_pool_infos );
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
     void DestroyUnusedInstancesInPools();
     void DumpPoolInfos( FOutputDevice & output_device ) const;
 #endif

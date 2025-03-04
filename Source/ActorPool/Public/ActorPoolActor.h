@@ -79,7 +79,7 @@ public:
     void DestroyActors();
     void DestroyUnusedInstances();
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
     void DumpPoolInfos( FOutputDevice & output_device ) const;
 #endif
 
@@ -115,7 +115,7 @@ public:
 
     bool ReturnActorToPool( AActor * actor );
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
     void DestroyUnusedInstancesInPools();
     void DumpPoolInfos( FOutputDevice & output_device ) const;
 #endif

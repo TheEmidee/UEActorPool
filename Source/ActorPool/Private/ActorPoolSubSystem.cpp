@@ -6,7 +6,7 @@
 #include <Engine/World.h>
 #include <HAL/IConsoleManager.h>
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
 static FAutoConsoleCommandWithWorld GActorPoolDestroyInstancesInPools(
     TEXT( "ActorPool.DestroyUnusedInstancesInPools" ),
     TEXT( "Destroys all actors in the pools which have not been acquired." ),
@@ -178,7 +178,7 @@ void UActorPoolSubSystem::UnRegisterPooledActor( const FActorPoolInfos & actor_p
     ActorPoolActor->UnRegisterPooledActor( actor_pool_infos );
 }
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
 void UActorPoolSubSystem::DestroyUnusedInstancesInPools()
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )

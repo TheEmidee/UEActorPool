@@ -12,7 +12,7 @@
 #include <Engine/GameInstance.h>
 #endif
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
 static TAutoConsoleVariable< int32 > GActorPoolForceInstanceCreationWhenPoolIsEmpty(
     TEXT( "ActorPool.ForceInstanceCreationWhenPoolIsEmpty" ),
     0,
@@ -52,7 +52,7 @@ AActor * FActorPoolInstances::GetAvailableInstance( UWorld * world )
 {
     if ( AvailableInstanceIndex == Instances.Num() )
     {
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
         if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() )
         {
             PoolInfos.PoolingPolicy = EAPPoolingPolicy::CreateNewInstances;
@@ -176,7 +176,7 @@ void FActorPoolInstances::DestroyUnusedInstances()
     Instances.SetNum( AvailableInstanceIndex );
 }
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
 void FActorPoolInstances::DumpPoolInfos( FOutputDevice & output_device ) const
 {
     output_device.Logf( ELogVerbosity::Verbose, TEXT( "Pool for class %s" ), *PoolInfos.ActorClass.ToString() );
@@ -219,7 +219,7 @@ void AActorPoolActor::BeginPlay()
     Super::BeginPlay();
 
     // Initialize the pools
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
     if ( GActorPoolDisable.GetValueOnGameThread() == 0 )
 #endif
     {
@@ -337,7 +337,7 @@ AActor * AActorPoolActor::GetActorFromPool( TSubclassOf< AActor > actor_class )
 
     if ( actor_instances == nullptr )
     {
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
         if ( GActorPoolForceInstanceCreationWhenPoolIsEmpty.GetValueOnGameThread() == 1 )
         {
             FActorPoolInfos pool_infos;
@@ -372,7 +372,7 @@ bool AActorPoolActor::ReturnActorToPool( AActor * actor )
     return false;
 }
 
-#if !( UE_BUILD_SHIPPING || UE_BUILD_TEST )
+#if !UE_BUILD_SHIPPING
 void AActorPoolActor::DestroyUnusedInstancesInPools()
 {
     for ( auto & key_pair : ActorPools )
