@@ -50,53 +50,43 @@ bool UActorPoolSubSystem::IsActorClassPoolable( const TSubclassOf< AActor > acto
     return ActorPoolActor->IsActorClassPoolable( actor_class );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
+AActor * UActorPoolSubSystem::GetActorFromPool( FActorPoolRequestHandle & request_handle, TSubclassOf< AActor > actor_class )
 {
-    return GetActorFromPoolWithTransform( actor_class, FTransform::Identity, on_actor_got_from_pool );
+    return GetActorFromPoolWithTransform( request_handle, actor_class, FTransform::Identity );
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDelegate on_actor_got_from_pool )
+AActor * UActorPoolSubSystem::GetActorFromPoolWithTransform( FActorPoolRequestHandle & request_handle, TSubclassOf< AActor > actor_class, FTransform transform )
 {
     if ( !ensureMsgf( ActorPoolActor != nullptr, TEXT( "%s - ActorPoolActor is not valid!" ), StringCast< TCHAR >( __FUNCTION__ ).Get() ) )
     {
-        on_actor_got_from_pool.ExecuteIfBound( nullptr );
-        return FActorPoolRequestHandle();
+        request_handle = FActorPoolRequestHandle();
+        return nullptr;
     }
 
     if ( auto * actor = GetActorFromPoolWithTransformNoDeferred( actor_class, transform ) )
     {
-        on_actor_got_from_pool.ExecuteIfBound( actor );
-
         if ( actor->Implements< UAPPooledActorInterface >() )
         {
             if ( IAPPooledActorInterface::Execute_IsUsingDeferredAcquisitionFromPool( actor ) )
             {
-                const auto & request = PendingActorRequests.Emplace_GetRef( on_actor_got_from_pool, actor, transform );
-                IAPPooledActorInterface::Execute_OnAquiredFromPoolDeferred( actor, request.Handle );
-                return request.Handle;
+                const auto & request = PendingActorRequests.Emplace_GetRef( actor, transform );
+                request_handle = request.Handle;
+                return actor;
             }
         }
     }
 
-    return FActorPoolRequestHandle();
+    request_handle = FActorPoolRequestHandle();
+    return nullptr;
 }
 
-FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPool( TSubclassOf< AActor > actor_class, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+AActor * UActorPoolSubSystem::K2_GetActorFromPool( FActorPoolRequestHandle & request_handle, TSubclassOf< AActor > actor_class )
 {
-    const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
-        on_actor_got_from_pool.ExecuteIfBound( actor );
-    } );
-
-    return GetActorFromPool( actor_class, delegate );
+    return GetActorFromPool( request_handle, actor_class );
 }
-
-FActorPoolRequestHandle UActorPoolSubSystem::K2_GetActorFromPoolWithTransform( TSubclassOf< AActor > actor_class, FTransform transform, FAPOnActorGotFromPoolDynamicDelegate on_actor_got_from_pool )
+AActor * UActorPoolSubSystem::K2_GetActorFromPoolWithTransform( FActorPoolRequestHandle & request_handle, TSubclassOf< AActor > actor_class, FTransform transform )
 {
-    const auto delegate = FAPOnActorGotFromPoolDelegate::CreateWeakLambda( const_cast< UObject * >( on_actor_got_from_pool.GetUObject() ), [ on_actor_got_from_pool ]( AActor * actor ) {
-        on_actor_got_from_pool.ExecuteIfBound( actor );
-    } );
-
-    return GetActorFromPoolWithTransform( actor_class, transform, delegate );
+    return GetActorFromPoolWithTransform( request_handle, actor_class, transform );
 }
 
 AActor * UActorPoolSubSystem::GetActorFromPoolWithTransformNoDeferred( TSubclassOf< AActor > actor_class, FTransform transform )
@@ -139,7 +129,7 @@ bool UActorPoolSubSystem::FinishAcquireActor( FActorPoolRequestHandle handle )
         if ( request.Handle == handle )
         {
             request.Actor->SetActorTransform( request.Transform );
-            request.Callback.ExecuteIfBound( request.Actor.Get() );
+            IAPPooledActorInterface::Execute_OnAquiredFromPoolDeferred( request.Actor.Get(), request.Handle );
             PendingActorRequests.RemoveAt( index );
             return true;
         }

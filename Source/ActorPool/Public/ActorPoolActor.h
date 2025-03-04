@@ -7,8 +7,6 @@
 
 #include "ActorPoolActor.generated.h"
 
-DECLARE_DELEGATE_OneParam( FAPOnActorGotFromPoolDelegate, AActor * Actor );
-
 struct FActorPoolInfos;
 
 USTRUCT( BlueprintType )
