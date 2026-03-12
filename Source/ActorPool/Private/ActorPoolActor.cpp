@@ -286,7 +286,7 @@ void AActorPoolActor::RegisterPooledActor( const FActorPoolInfos & actor_pool_in
     auto is_server = IsRunningDedicatedServer();
 
 #if WITH_EDITOR
-    checkSlow( game_instance->GetWorldContext() );
+    checkSlow( world->GetGameInstance()->GetWorldContext() );
     is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
 #endif
 
@@ -318,7 +318,7 @@ void AActorPoolActor::UnRegisterPooledActor( const FActorPoolInfos & actor_pool_
     auto is_server = IsRunningDedicatedServer();
 
 #if WITH_EDITOR
-    checkSlow( game_instance->GetWorldContext() );
+    checkSlow( world->GetGameInstance()->GetWorldContext() );
     is_server |= world->GetGameInstance()->GetWorldContext()->RunAsDedicated;
 #endif
 
